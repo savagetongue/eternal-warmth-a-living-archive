@@ -3,20 +3,18 @@ import { intervalToDuration } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 const GENESIS_DATE = new Date('2023-09-02T00:00:00');
 export function TimeKeeper() {
-  const [now, setNow] = useState<Date | null>(null);
+  const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    setNow(new Date());
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
   const duration = useMemo(() => {
-    if (!now) return null;
     return intervalToDuration({
       start: GENESIS_DATE,
       end: now,
     });
   }, [now]);
-  if (!now || !duration) return <div className="h-48 md:h-64" />;
+
   const displayUnits = [
     { label: 'Years', value: duration.years },
     { label: 'Months', value: duration.months },
@@ -24,7 +22,7 @@ export function TimeKeeper() {
     { label: 'Hours', value: duration.hours },
     { label: 'Minutes', value: duration.minutes },
     { label: 'Seconds', value: duration.seconds },
-  ].filter(u => u.value !== undefined);
+  ];
   return (
     <div className="flex flex-col items-center justify-center space-y-12 py-16">
       <div className="flex flex-col items-center gap-3">
@@ -40,7 +38,7 @@ export function TimeKeeper() {
       <div className="flex flex-wrap justify-center gap-x-12 gap-y-10 max-w-5xl px-4">
         {displayUnits.map((unit) => (
           <div key={unit.label} className="flex flex-col items-center min-w-[80px]">
-            <div className="relative overflow-hidden h-16 md:h-24 flex items-center justify-center w-[2.2ch]">
+            <div className="relative overflow-hidden h-16 md:h-24 flex items-center justify-center w-[3.2ch]">
               <AnimatePresence mode="popLayout">
                 <motion.span
                   key={unit.value}
@@ -48,9 +46,9 @@ export function TimeKeeper() {
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -30, opacity: 0 }}
                   transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                  className="text-6xl md:text-8xl font-serif font-black text-foreground tabular-nums tracking-tighter"
+                  className="text-6xl md:text-8xl font-mono font-black text-foreground tabular-nums tracking-tighter"
                 >
-                  {(unit.value ?? 0).toString().padStart(2, '0')}
+                  {(unit.value ?? 0).toString().padStart(3, '0')}
                 </motion.span>
               </AnimatePresence>
               <motion.div
