@@ -5,7 +5,7 @@ import { MemoryCard } from '@/components/MemoryCard';
 import { ComposeModal } from '@/components/ComposeModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Toaster } from '@/components/ui/sonner';
-import { Sparkles, Heart, Plus, Feather, ChevronDown } from 'lucide-react';
+import { Sparkles, Heart, Plus, Feather, ChevronDown, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
@@ -46,7 +46,6 @@ export function HomePage() {
     <div className="min-h-screen bg-transparent relative selection:bg-peach/30 overflow-x-hidden">
       <ThemeToggle className="fixed top-6 right-6 lg:right-10 z-50" />
       <Toaster richColors position="bottom-right" closeButton />
-      {/* Dynamic Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <motion.div
           style={{ y: y1 }}
@@ -61,7 +60,6 @@ export function HomePage() {
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="py-24 md:py-36 flex flex-col items-center">
-          {/* Header & Hero Section */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -79,7 +77,7 @@ export function HomePage() {
               </div>
             </div>
             <p className="text-2xl md:text-4xl font-serif italic text-muted-foreground/60 max-w-4xl mx-auto leading-relaxed px-8 text-balance">
-              "A sanctuary where our story unfolds page by page, growing into an eternal tapestry of shared light."
+              "A sanctuary where our story unfolds page by page, growing into an eternal tapestry of shared light and links."
             </p>
             <TimeKeeper />
             <motion.div
@@ -92,7 +90,6 @@ export function HomePage() {
               <ChevronDown className="w-5 h-5" />
             </motion.div>
           </motion.div>
-          {/* Journal Section */}
           <div className="w-full space-y-32 max-w-6xl">
             <div className="flex flex-col md:flex-row items-center justify-between border-b border-peach/10 pb-12 gap-8">
               <div className="space-y-3 text-center md:text-left">
@@ -102,8 +99,10 @@ export function HomePage() {
                 </h2>
                 <p className="text-lg text-muted-foreground italic font-serif opacity-70">A chronological archive of our love</p>
               </div>
-              <div className="px-6 py-2.5 rounded-full bg-white/40 text-[11px] uppercase tracking-[0.4em] text-muted-foreground font-black border border-peach/10 shadow-sm backdrop-blur-sm select-none">
-                Journeying through {memories.length} Moments
+              <div className="flex flex-col items-center md:items-end gap-2">
+                <div className="px-6 py-2.5 rounded-full bg-white/40 text-[11px] uppercase tracking-[0.4em] text-muted-foreground font-black border border-peach/10 shadow-sm backdrop-blur-sm select-none">
+                  Journeying through {memories.length} Moments
+                </div>
               </div>
             </div>
             <div className="flex flex-col space-y-48 md:space-y-64 items-center">
@@ -142,11 +141,11 @@ export function HomePage() {
                     className="w-full max-w-4xl text-center py-64 bg-white/30 backdrop-blur-md rounded-[5rem] border-2 border-dashed border-peach/20 flex flex-col items-center justify-center space-y-12"
                   >
                     <div className="p-8 rounded-full bg-peach/5 border border-peach/10 animate-float">
-                      <Feather className="w-16 h-16 text-peach/20" />
+                      <LinkIcon className="w-16 h-16 text-peach/20" />
                     </div>
                     <div className="space-y-6">
                       <p className="font-serif text-4xl italic text-muted-foreground/80">Our story begins here...</p>
-                      <p className="text-xs text-muted-foreground/40 tracking-[0.5em] uppercase font-black">Begin the chronicle of forever</p>
+                      <p className="text-xs text-muted-foreground/40 tracking-[0.5em] uppercase font-black px-12">Capture your first memory with a letter or an external link</p>
                     </div>
                     <Button
                       variant="default"

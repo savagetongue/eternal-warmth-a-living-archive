@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Feather, ImageIcon, Video, Music, Type, Upload, Calendar, Link as LinkIcon } from 'lucide-react';
+import { Feather, ImageIcon, Video, Music, Type, Upload, Calendar, Link as LinkIcon, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import type { MemoryEntry, MemoryType } from '@shared/types';
 import { cn } from '@/lib/utils';
@@ -26,16 +26,15 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const [content, setContent] = useState('');
   const [type, setType] = useState<MemoryType>('text');
   const [mediaUrl, setMediaUrl] = useState('');
-  const [previewUrl, setPreviewUrl] = useState(''); 
+  const [previewUrl, setPreviewUrl] = useState('');
   const [livePreviewUrl, setLivePreviewUrl] = useState('');
   const [dominantColor, setDominantColor] = useState('');
   const [currentFileName, setCurrentFileName] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null);
   const objectUrlsRef = useRef<string[]>([]);
   const extractDominantColor = (img: HTMLImageElement): string => {
     const canvas = document.createElement('canvas');
@@ -56,9 +55,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     const canvas = document.createElement('canvas');
     const originalWidth = img.naturalWidth || img.width;
     const originalHeight = img.naturalHeight || img.height;
-    // Optimized for Durable Object storage limits (128KB)
-    // Reducing target resolution slightly and lowering quality to ensure base64 < 128KB
-    const targetWidth = Math.max(800, Math.floor(originalWidth * 0.6));
+    const targetWidth = Math.min(600, originalWidth);
     const scaleFactor = targetWidth / originalWidth;
     const targetHeight = Math.floor(originalHeight * scaleFactor);
     canvas.width = targetWidth;
@@ -68,8 +65,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-    // Quality 0.75 provides great balance and keeps result safely under DO limits
-    return canvas.toDataURL('image/jpeg', 0.75);
+    return canvas.toDataURL('image/jpeg', 0.6); // Reduced quality for storage safety
   };
   const cleanupObjectUrls = useCallback(() => {
     objectUrlsRef.current.forEach((url) => {
@@ -83,14 +79,11 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     return new Promise((resolve) => {
       const objectUrl = URL.createObjectURL(file);
       objectUrlsRef.current.push(objectUrl);
-      // Default resolution for non-images or failures
       const hash = file.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const hue = file.type.startsWith('video/') ? (210 + (hash % 40)) : (350 + (hash % 20));
       const fallbackColor = `hsl(${hue}, 70%, 90%)`;
       if (file.type.startsWith('image/')) {
         const img = new Image();
-        img.crossOrigin = "anonymous";
-        // Timeout to prevent hanging on corrupt images
         const timeout = setTimeout(() => {
           resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor });
         }, 3000);
@@ -106,7 +99,6 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
         };
         img.src = objectUrl;
       } else {
-        // Video/Audio don't get base64 previews in this phase, just signatures
         resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor });
       }
     });
@@ -132,9 +124,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       setCurrentFileName('');
       setDate(new Date().toISOString().split('T')[0]);
     }
-    setUploadProgress(0);
-    setIsUploading(false);
-    setShowUrlInput(false);
+    setIsProcessing(false);
   }, [initialData, cleanupObjectUrls]);
   useEffect(() => {
     if (isOpen) {
@@ -145,53 +135,28 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 100 * 1024 * 1024) {
-      toast.error("File is too heavy (Max 100MB)");
-      return;
-    }
     setCurrentFileName(file.name);
-    setIsUploading(true);
-    setUploadProgress(5);
+    setIsProcessing(true);
     try {
       const { blobUrl, base64Thumb, color } = await generateSignature(file);
       setLivePreviewUrl(blobUrl);
       setPreviewUrl(base64Thumb);
       setDominantColor(color);
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('type', type);
-      const interval = setInterval(() => {
-        setUploadProgress(prev => (prev < 90 ? prev + 2 : prev));
-      }, 200);
-      const res = await fetch('/api/memories/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const json = await res.json();
-      clearInterval(interval);
-      if (json.success) {
-        setUploadProgress(100);
-        setMediaUrl(json.data.url);
-        toast.success("Media preserved successfully.");
-        setShowUrlInput(false);
-      } else {
-        throw new Error(json.error || "Upload failed");
+      toast.success("Visual signature captured locally.");
+      if (!mediaUrl) {
+        toast.info("For permanent storage, please provide an external URL.", { duration: 5000 });
       }
     } catch (err) {
-      console.warn("Upload failed, relying on high-res preview fallback", err);
-      toast.warning("Server preservation pending. Offline preview will be used.");
+      toast.error("Failed to process local preview.");
     } finally {
-      setTimeout(() => {
-        setIsUploading(false);
-        setUploadProgress(0);
-      }, 500);
+      setIsProcessing(false);
     }
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
     if (type !== 'text' && !mediaUrl && !previewUrl && !livePreviewUrl) {
-      toast.error("Please provide or upload media for this memory.");
+      toast.error("Please provide a URL or a visual signature for this memory.");
       return;
     }
     setIsSubmitting(true);
@@ -222,6 +187,17 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       toast.error("Connection lost to the archive.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+  const handleTypeChange = (newType: MemoryType) => {
+    setType(newType);
+    if (newType !== 'text') {
+      setTimeout(() => urlInputRef.current?.focus(), 100);
+    } else {
+      setMediaUrl('');
+      setPreviewUrl('');
+      setLivePreviewUrl('');
+      setDominantColor('');
     }
   };
   return (
@@ -275,19 +251,11 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                   size="sm"
                   className={cn(
                     "flex flex-col gap-1.5 h-auto py-3 rounded-2xl transition-all border-peach/10",
-                    type === item.id 
-                      ? "bg-peach hover:bg-peach-dark shadow-[0_4px_12px_rgba(255,154,158,0.3)] text-white" 
+                    type === item.id
+                      ? "bg-peach hover:bg-peach-dark shadow-[0_4px_12px_rgba(255,154,158,0.3)] text-white"
                       : "hover:border-peach/30 bg-white"
                   )}
-                  onClick={() => {
-                    setType(item.id as MemoryType);
-                    if (item.id === 'text') {
-                      setMediaUrl('');
-                      setPreviewUrl('');
-                      setLivePreviewUrl('');
-                      setDominantColor('');
-                    }
-                  }}
+                  onClick={() => handleTypeChange(item.id as MemoryType)}
                 >
                   <item.icon className="w-4 h-4" />
                   <span className="text-[10px] font-bold tracking-tight">{item.label}</span>
@@ -296,16 +264,42 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
             </div>
           </div>
           {type !== 'text' && (
-            <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+            <div className="space-y-5 animate-in fade-in slide-in-from-top-2">
+              <div className="space-y-2">
+                <Label className="text-[10px] uppercase tracking-widest text-peach font-black flex items-center gap-2">
+                  <LinkIcon className="w-3 h-3" /> Permanent Source (URL)
+                </Label>
+                <Input
+                  ref={urlInputRef}
+                  placeholder={`Direct URL to high-res ${type}...`}
+                  className="bg-white rounded-xl border-peach/20 focus:ring-peach/30 h-12 shadow-sm font-sans"
+                  value={mediaUrl}
+                  onChange={(e) => setMediaUrl(e.target.value)}
+                />
+                <div className="flex gap-2 p-3 bg-peach/5 rounded-lg border border-peach/10">
+                  <Info className="w-4 h-4 text-peach flex-shrink-0 mt-0.5" />
+                  <p className="text-[10px] text-muted-foreground leading-tight">
+                    Cloud storage is restricted. For permanent high-res display, please provide a direct URL from a host (like Imgur, Dropbox, etc).
+                  </p>
+                </div>
+              </div>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-peach/10" />
+                </div>
+                <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
+                  <span className="bg-warm-white px-3 text-muted-foreground font-bold">Or capture visual signature</span>
+                </div>
+              </div>
               <div className="space-y-2">
                 <div
-                  onClick={() => !isUploading && fileInputRef.current?.click()}
+                  onClick={() => !isProcessing && fileInputRef.current?.click()}
                   className={cn(
-                    "relative border-2 border-dashed rounded-[2rem] p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden",
-                    isUploading ? "border-peach/30" : "hover:bg-peach/5 border-peach/10 bg-white"
+                    "relative border-2 border-dashed rounded-[2rem] p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden",
+                    isProcessing ? "border-peach/30 bg-peach/5" : "hover:bg-peach/5 border-peach/10 bg-white"
                   )}
                 >
-                  {(livePreviewUrl || previewUrl) && !isUploading && (
+                  {(livePreviewUrl || previewUrl) && !isProcessing && (
                     <div className="absolute inset-0 z-0">
                        {type === 'image' ? (
                           <img src={livePreviewUrl || previewUrl} className="w-full h-full object-cover opacity-20" alt="Preview" />
@@ -314,13 +308,13 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                        )}
                     </div>
                   )}
-                  <Upload className={cn("w-8 h-8 relative z-10", isUploading ? "text-peach animate-bounce" : "text-peach/40")} />
+                  <Upload className={cn("w-6 h-6 relative z-10", isProcessing ? "text-peach animate-bounce" : "text-peach/40")} />
                   <div className="text-center relative z-10">
-                    <p className="text-sm font-bold text-foreground/80">
-                      {isUploading ? "Extracting Essence..." : (mediaUrl || livePreviewUrl || previewUrl) ? "Replace Selection" : `Preserve ${type}`}
+                    <p className="text-xs font-bold text-foreground/80">
+                      {isProcessing ? "Extracting Essence..." : (livePreviewUrl || previewUrl) ? "Signature Captured" : `Select ${type} for signature`}
                     </p>
                     {currentFileName && (
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1 truncate max-w-[200px]">
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest mt-1 truncate max-w-[150px]">
                         {currentFileName}
                       </p>
                     )}
@@ -331,47 +325,19 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                     className="hidden"
                     accept={type === 'audio' ? 'audio/*' : type === 'video' ? 'video/*' : 'image/*'}
                     onChange={handleFileChange}
-                    disabled={isUploading}
+                    disabled={isProcessing}
                   />
                 </div>
-                {isUploading && <Progress value={uploadProgress} className="h-1.5 bg-peach/10" />}
-                {(mediaUrl || previewUrl) && !isUploading && (
-                  <p className="text-[9px] text-center text-peach/60 uppercase tracking-[0.2em] font-bold">
-                    {mediaUrl ? "Chromatic Signature Captured" : "High-Res Preview Preserved"}
-                  </p>
-                )}
+                <p className="text-[9px] text-center text-muted-foreground italic px-4 leading-tight">
+                  We will store a small visual signature (thumbnail) for the archive. Note: Full files are not uploaded to our server.
+                </p>
               </div>
-              {!isUploading && (
-                <div className="space-y-4">
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-peach/10" />
-                    </div>
-                    <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
-                      <span 
-                        className="bg-warm-white px-3 text-muted-foreground cursor-pointer hover:text-peach transition-colors flex items-center gap-1 font-bold"
-                        onClick={() => setShowUrlInput(!showUrlInput)}
-                      >
-                        <LinkIcon className="w-3 h-3" /> {showUrlInput ? "Collapse Link Input" : "Provide External Link"}
-                      </span>
-                    </div>
-                  </div>
-                  {showUrlInput && (
-                    <Input
-                      placeholder={`Direct URL to ${type}...`}
-                      className="bg-white rounded-xl border-peach/10 focus:ring-peach/30 h-12 shadow-sm font-sans"
-                      value={mediaUrl}
-                      onChange={(e) => setMediaUrl(e.target.value)}
-                    />
-                  )}
-                </div>
-              )}
             </div>
           )}
           <Button
             type="submit"
             className="w-full py-8 rounded-2xl bg-peach hover:bg-peach-dark text-white font-serif text-xl shadow-xl hover:shadow-peach/30 transition-all duration-500 disabled:opacity-50 mt-4"
-            disabled={isSubmitting || isUploading || !content.trim()}
+            disabled={isSubmitting || isProcessing || !content.trim()}
           >
             {isSubmitting ? "Preserving..." : "Seal in Archive"}
           </Button>

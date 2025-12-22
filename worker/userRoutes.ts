@@ -22,7 +22,7 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
         const filename = c.req.param('filename');
         const key = `${type}/${filename}`;
         if (!c.env.MEMORIES_BUCKET) {
-            return c.json({ success: false, error: 'Storage not configured' }, 500);
+            return c.json({ success: false, error: 'Storage not configured' }, 503);
         }
         const object = await c.env.MEMORIES_BUCKET.get(key);
         if (!object) {
@@ -34,34 +34,12 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
         headers.set('Cache-Control', 'public, max-age=31536000');
         return new Response(object.body, { headers });
     });
-    app.use('/api/memories/upload', cors({ origin: '*', allowMethods: ['POST', 'OPTIONS'], allowHeaders: ['Content-Type'], exposeHeaders: [], credentials: false }));
+    // Restricted upload endpoint due to environment sandbox limits
     app.post('/api/memories/upload', async (c) => {
-        try {
-            const formData = await c.req.formData();
-            const file = formData.get('file') as File | null;
-            const type = formData.get('type') as string | null;
-            if (!file || !type) {
-                return c.json({ success: false, error: 'Missing file or type' }, 400);
-            }
-            if (file.size > 100 * 1024 * 1024) {
-                return c.json({ success: false, error: 'File size exceeds 100MB limit' }, 413);
-            }
-            const extension = file.name.split('.').pop() || 'bin';
-            const uuid = crypto.randomUUID();
-            const filename = `${uuid}-${Date.now()}.${extension}`;
-            const key = `${type}/${filename}`;
-            if (c.env.MEMORIES_BUCKET) {
-                await c.env.MEMORIES_BUCKET.put(key, await file.arrayBuffer(), {
-                    httpMetadata: { contentType: file.type }
-                });
-                const publicUrl = `/api/media/${key}`;
-                return c.json({ success: true, data: { url: publicUrl, key } });
-            }
-            return c.json({ success: false, error: 'Server storage is unavailable. Preservation continues locally.' }, 503);
-        } catch (err) {
-            console.error('Upload error:', err);
-            return c.json({ success: false, error: 'Failed to upload media' }, 500);
-        }
+        return c.json({ 
+            success: false, 
+            error: 'Direct file uploads are currently restricted due to sanctuary capacity. Please provide an external URL for permanent high-res preservation. A local visual signature will still be stored.' 
+        }, 403);
     });
     app.put('/api/memories/:id', async (c) => {
         const id = c.req.param('id');

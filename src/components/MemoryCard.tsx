@@ -1,7 +1,7 @@
 import React, { forwardRef, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO, isValid } from 'date-fns';
-import { Quote, Pencil, Trash2, Music, Disc3, Loader2, ImageIcon, Video, AlertCircle } from 'lucide-react';
+import { Quote, Pencil, Trash2, Music, Disc3, Loader2, ImageIcon, Video, AlertCircle, Link2Off } from 'lucide-react';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
     return memory.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   }, [memory.id]);
   const rotation = useMemo(() => {
-    const r = (hashId % 40) / 20 - 1; 
+    const r = (hashId % 40) / 20 - 1;
     return r.toFixed(2);
   }, [hashId]);
   const fallbackColor = useMemo(() => {
@@ -64,8 +64,8 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       layout
       initial={{ opacity: 0, y: 40, rotate: parseFloat(rotation) }}
       whileInView={{ opacity: 1, y: 0 }}
-      whileHover={{ 
-        y: -8, 
+      whileHover={{
+        y: -8,
         rotate: 0,
         transition: { duration: 0.4, ease: "easeOut" }
       }}
@@ -105,7 +105,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       </div>
       {(memory.type === 'image' || memory.type === 'video') && (
         <div className="space-y-8">
-          <div 
+          <div
             className="relative overflow-hidden rounded-[2rem] aspect-[4/3] md:aspect-[16/10] h-auto min-h-[300px] shadow-inner border-4 border-warm-paper bg-muted/20"
             style={{ backgroundColor: hasError ? 'transparent' : fallbackColor }}
           >
@@ -123,9 +123,16 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
               )}
             </AnimatePresence>
             {hasError ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                <AlertCircle className="w-12 h-12 text-red-300 mb-4" />
-                <span className="text-[10px] uppercase tracking-[0.3em] text-red-300 font-bold">Failed to load from archive</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-zinc-50 dark:bg-zinc-900">
+                <Link2Off className="w-12 h-12 text-red-300 mb-4" />
+                <span className="text-[10px] uppercase tracking-[0.3em] text-red-300 font-bold px-8">External link unreachable - showing archived signature</span>
+                {memory.previewUrl && (
+                  <img 
+                    src={memory.previewUrl} 
+                    className="absolute inset-0 w-full h-full object-cover opacity-20 grayscale" 
+                    alt="Archived signature"
+                  />
+                )}
               </div>
             ) : (
               memory.type === 'image' ? (
@@ -144,7 +151,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                 ) : (
                   <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
                     <ImageIcon className="w-16 h-16 text-foreground/10 mb-4" />
-                    <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/20 font-bold">Missing visual data</span>
+                    <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/20 font-bold">No visual source provided</span>
                   </div>
                 )
               ) : (
@@ -158,8 +165,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                   controls
                   onLoadedData={() => setIsMediaLoading(false)}
                   onCanPlayThrough={() => setIsMediaLoading(false)}
-                  onError={() => { 
-                    // If video source fails, we still might have a poster
+                  onError={() => {
                     if (!videoSrc) {
                       setHasError(true);
                     }
@@ -167,6 +173,13 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                   }}
                 />
               )
+            )}
+            {!memory.mediaUrl && memory.previewUrl && !hasError && (
+              <div className="absolute bottom-4 right-4 z-20">
+                <div className="px-3 py-1 bg-white/60 backdrop-blur-md rounded-full border border-peach/20 text-[8px] uppercase tracking-widest text-peach font-bold shadow-sm">
+                  Archived Signature
+                </div>
+              </div>
             )}
           </div>
           <p className="text-xl md:text-3xl font-serif leading-relaxed text-foreground/90 italic text-center px-4 whitespace-pre-wrap break-words">
@@ -183,7 +196,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
             </p>
           </div>
           <div className="relative p-8 rounded-[2.5rem] border border-peach/10 overflow-hidden flex flex-col items-center gap-6">
-            <div 
+            <div
               className="absolute inset-0 opacity-20"
               style={{ backgroundColor: fallbackColor }}
             />
@@ -202,15 +215,15 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
               </div>
             </div>
             {videoSrc ? (
-              <audio 
-                src={videoSrc} 
-                controls 
+              <audio
+                src={videoSrc}
+                controls
                 className="w-full h-10 relative z-10 opacity-80 mix-blend-multiply dark:mix-blend-normal"
               />
             ) : (
-              <div className="w-full h-12 flex items-center justify-center bg-peach/5 border-2 border-dashed border-peach/20 rounded-xl relative z-10">
+              <div className="w-full h-12 flex items-center justify-center bg-white/40 backdrop-blur-sm border-2 border-dashed border-peach/20 rounded-xl relative z-10">
                 <Music className="w-6 h-6 text-peach/30 mr-2" />
-                <span className="text-sm text-muted-foreground/60 font-medium">Archived Audio</span>
+                <span className="text-sm text-muted-foreground/60 font-medium">Archived Signature</span>
               </div>
             )}
           </div>
