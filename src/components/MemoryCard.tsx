@@ -1,7 +1,7 @@
 import React, { forwardRef, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { format, parseISO, isValid } from 'date-fns';
-import { Quote, Pencil, Trash2, Music, Cassette, Loader2 } from 'lucide-react';
+import { Quote, Pencil, Trash2, Music, Disc3, Loader2 } from 'lucide-react';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -143,7 +143,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
           </div>
           <div className="bg-peach/5 p-8 rounded-[2.5rem] border border-peach/10 flex flex-col items-center gap-6 relative overflow-hidden">
             <div className="absolute top-2 right-4 opacity-10">
-              <Cassette className="w-20 h-20" />
+              <Disc3 className="w-20 h-20" />
             </div>
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-peach/10 text-peach animate-pulse">
