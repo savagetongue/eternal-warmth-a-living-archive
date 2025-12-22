@@ -78,7 +78,8 @@ function updateWranglerJsonc() {
 
 function runSetupCommands() {
     const commands = [
-    "bun add react-intersection-observer@^9.5.0"
+    "bun add react-intersection-observer@^9.5.0",
+    "bun add uuid"
 ];
     
     if (commands.length === 0) {
