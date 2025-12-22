@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { intervalToDuration } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-const GENESIS_DATE = new Date('2023-09-02T00:00:00');
+// Fixed Genesis Date: September 2nd, 2023. JS months are 0-indexed (8 = September).
+const GENESIS_DATE = new Date(2023, 8, 2, 0, 0, 0);
 export function TimeKeeper() {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
@@ -14,13 +15,19 @@ export function TimeKeeper() {
       end: now,
     });
   }, [now]);
+  // Calibration logging for temporal verification
+  useEffect(() => {
+    if (duration.years !== undefined) {
+      console.log(`[Temporal Archive] Current duration: ${duration.years}y ${duration.months}m ${duration.days}d ${duration.hours}h`);
+    }
+  }, [duration]);
   const displayUnits = [
-    { label: 'Years', value: duration.years },
-    { label: 'Months', value: duration.months },
-    { label: 'Days', value: duration.days },
-    { label: 'Hours', value: duration.hours },
-    { label: 'Minutes', value: duration.minutes },
-    { label: 'Seconds', value: duration.seconds },
+    { label: 'Years', value: duration.years ?? 0 },
+    { label: 'Months', value: duration.months ?? 0 },
+    { label: 'Days', value: duration.days ?? 0 },
+    { label: 'Hours', value: duration.hours ?? 0 },
+    { label: 'Minutes', value: duration.minutes ?? 0 },
+    { label: 'Seconds', value: duration.seconds ?? 0 },
   ];
   return (
     <div className="flex flex-col items-center justify-center space-y-12 py-20 md:py-32">
@@ -47,7 +54,7 @@ export function TimeKeeper() {
                   transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                   className="text-5xl md:text-7xl lg:text-8xl font-mono font-black text-foreground tabular-nums tracking-[-0.05em]"
                 >
-                  {(unit.value ?? 0).toString().padStart(3, '0')}
+                  {(unit.value).toString().padStart(3, '0')}
                 </motion.span>
               </AnimatePresence>
               <motion.div
