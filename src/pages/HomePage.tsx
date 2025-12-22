@@ -39,84 +39,84 @@ export function HomePage() {
     setIsModalOpen(true);
   };
   const { scrollYProgress } = useScroll();
-  const y1 = useTransform(scrollYProgress, [0, 1], [0, -100]);
-  const y2 = useTransform(scrollYProgress, [0, 1], [0, -300]);
+  const y1 = useTransform(scrollYProgress, [0, 1], [0, -150]);
+  const y2 = useTransform(scrollYProgress, [0, 1], [0, -400]);
   return (
     <div className="min-h-screen bg-transparent relative selection:bg-peach/30 overflow-x-hidden">
-      <ThemeToggle />
+      <ThemeToggle className="fixed top-6 right-6 lg:right-10" />
       <Toaster richColors position="top-center" closeButton />
-      {/* Background Orbs */}
+      {/* Dynamic Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <motion.div
           style={{ y: y1 }}
-          className="absolute top-[5%] left-[-10%] w-[50vw] h-[50vw] bg-peach/10 rounded-full blur-[120px] animate-breathe"
+          className="absolute top-[5%] left-[-15%] w-[60vw] h-[60vw] bg-peach/10 rounded-full blur-[130px] animate-breathe"
         />
         <motion.div
           style={{ y: y2 }}
-          className="absolute top-[50%] right-[-15%] w-[60vw] h-[60vw] bg-mist/10 rounded-full blur-[150px] animate-breathe"
+          className="absolute top-[40%] right-[-20%] w-[70vw] h-[70vw] bg-mist/10 rounded-full blur-[160px] animate-breathe"
           transition={{ delay: 1 }}
         />
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')] opacity-[0.02] mix-blend-multiply pointer-events-none" />
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')] opacity-[0.03] mix-blend-multiply pointer-events-none" />
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="py-20 md:py-32 flex flex-col items-center">
-          {/* Hero Section */}
+        <div className="py-24 md:py-36 flex flex-col items-center">
+          {/* Header & Hero Section */}
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-            className="text-center space-y-12 mb-32 md:mb-48"
+            transition={{ duration: 1.2, ease: [0.19, 1, 0.22, 1] }}
+            className="text-center space-y-16 mb-40 md:mb-64"
           >
-            <div className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-white/60 backdrop-blur-xl border border-peach/20 shadow-sm text-peach font-black text-[10px] tracking-[0.3em] uppercase">
+            <div className="inline-flex items-center gap-3 px-8 py-3 rounded-full bg-white/60 backdrop-blur-2xl border border-peach/20 shadow-sm text-peach font-black text-[11px] tracking-[0.4em] uppercase">
               <Sparkles className="w-3.5 h-3.5" />
               Living Archive
             </div>
-            <div className="space-y-6">
-              <h1 className="text-[16vw] md:text-[11rem] font-serif font-black text-foreground tracking-[-0.08em] leading-[0.85] drop-shadow-sm select-none">
-                02<span className="text-peach/60 italic">.</span>09<span className="text-peach/60 italic">.</span>23
+            <div className="space-y-8">
+              <h1 className="text-[18vw] md:text-[12rem] font-serif font-black text-foreground tracking-[-0.08em] leading-[0.8] drop-shadow-sm select-none">
+                02<span className="text-peach/50 italic">.</span>09<span className="text-peach/50 italic">.</span>23
               </h1>
-              <div className="flex items-center justify-center gap-6">
-                <div className="h-px w-16 bg-gradient-to-r from-transparent via-peach/30 to-transparent" />
-                <Feather className="w-5 h-5 text-peach/30" />
-                <div className="h-px w-16 bg-gradient-to-r from-transparent via-peach/30 to-transparent" />
+              <div className="flex items-center justify-center gap-10">
+                <div className="h-px w-24 bg-gradient-to-r from-transparent via-peach/20 to-transparent" />
+                <Feather className="w-6 h-6 text-peach/30 animate-float" />
+                <div className="h-px w-24 bg-gradient-to-r from-transparent via-peach/20 to-transparent" />
               </div>
             </div>
-            <p className="text-xl md:text-3xl font-serif italic text-muted-foreground/60 max-w-3xl mx-auto leading-relaxed px-6 text-balance">
-              "A sanctuary where time stands still, capturing the infinite beauty of our shared journey."
+            <p className="text-2xl md:text-4xl font-serif italic text-muted-foreground/60 max-w-4xl mx-auto leading-relaxed px-8 text-balance">
+              "A sanctuary where time is a slow river, preserving the infinite beauty of our shared light."
             </p>
             <TimeKeeper />
           </motion.div>
-          {/* Feed Section */}
-          <div className="w-full space-y-24 max-w-5xl">
-            <div className="flex flex-col md:flex-row items-center justify-between border-b border-peach/10 pb-10 gap-6">
-              <div className="space-y-2 text-center md:text-left">
-                <h2 className="text-4xl font-serif font-bold text-foreground flex items-center justify-center md:justify-start gap-4">
-                  <Heart className="w-7 h-7 text-peach fill-peach/20" />
+          {/* Journal Section */}
+          <div className="w-full space-y-32 max-w-6xl">
+            <div className="flex flex-col md:flex-row items-center justify-between border-b border-peach/10 pb-12 gap-8">
+              <div className="space-y-3 text-center md:text-left">
+                <h2 className="text-5xl font-serif font-bold text-foreground flex items-center justify-center md:justify-start gap-5">
+                  <Heart className="w-8 h-8 text-peach fill-peach/20" />
                   Journal of Days
                 </h2>
-                <p className="text-base text-muted-foreground italic font-serif opacity-70">Handwritten echoes of us</p>
+                <p className="text-lg text-muted-foreground italic font-serif opacity-70">Echoes preserved in time</p>
               </div>
-              <div className="px-5 py-2 rounded-full bg-white/40 text-[10px] uppercase tracking-[0.3em] text-muted-foreground font-black border border-peach/10 shadow-sm">
-                {memories.length} Moments Preserved
+              <div className="px-6 py-2.5 rounded-full bg-white/40 text-[11px] uppercase tracking-[0.4em] text-muted-foreground font-black border border-peach/10 shadow-sm backdrop-blur-sm">
+                {memories.length} Moments Archived
               </div>
             </div>
-            <div className="flex flex-col space-y-32 md:space-y-48 items-center">
+            <div className="flex flex-col space-y-48 md:space-y-64 items-center">
               <AnimatePresence mode="popLayout">
                 {isLoading ? (
                   [...Array(3)].map((_, i) => (
-                    <div key={i} className="w-full max-w-2xl h-96 bg-white/10 animate-pulse rounded-[3rem] border border-peach/5" />
+                    <div key={i} className="w-full max-w-2xl h-96 bg-white/10 animate-pulse rounded-[3.5rem] border border-peach/5" />
                   ))
                 ) : memories.length > 0 ? (
                   memories.map((memory, index) => (
                     <motion.div
                       key={memory.id}
-                      initial={{ opacity: 0, y: 50 }}
+                      initial={{ opacity: 0, y: 60 }}
                       whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: "-100px" }}
-                      transition={{ duration: 0.8, delay: index % 3 * 0.1 }}
+                      viewport={{ once: true, margin: "-150px" }}
+                      transition={{ duration: 1, delay: (index % 2) * 0.15 }}
                       className={cn(
                         "w-full flex",
-                        index % 2 === 0 ? "justify-start md:pl-12" : "justify-end md:pr-12"
+                        index % 2 === 0 ? "justify-start md:pl-20" : "justify-end md:pr-20"
                       )}
                     >
                       <div className="w-full max-w-2xl">
@@ -131,23 +131,23 @@ export function HomePage() {
                   ))
                 ) : (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
+                    initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="w-full max-w-3xl text-center py-48 bg-white/30 backdrop-blur-md rounded-[4rem] border-2 border-dashed border-peach/20 flex flex-col items-center justify-center space-y-8"
+                    className="w-full max-w-4xl text-center py-64 bg-white/30 backdrop-blur-md rounded-[5rem] border-2 border-dashed border-peach/20 flex flex-col items-center justify-center space-y-12"
                   >
-                    <div className="p-6 rounded-full bg-peach/5 border border-peach/10">
-                      <Feather className="w-14 h-14 text-peach/20" />
+                    <div className="p-8 rounded-full bg-peach/5 border border-peach/10 animate-float">
+                      <Feather className="w-16 h-16 text-peach/20" />
                     </div>
-                    <div className="space-y-3">
-                      <p className="font-serif text-3xl italic text-muted-foreground">The first page awaits...</p>
-                      <p className="text-sm text-muted-foreground/50 tracking-widest uppercase font-bold">Begin our digital tapestry</p>
+                    <div className="space-y-4">
+                      <p className="font-serif text-4xl italic text-muted-foreground/80">Our story begins here...</p>
+                      <p className="text-xs text-muted-foreground/40 tracking-[0.5em] uppercase font-black">Open the archive to eternity</p>
                     </div>
                     <Button
                       variant="outline"
-                      className="rounded-full px-12 py-8 border-peach/30 text-peach hover:bg-peach hover:text-white transition-all duration-500 font-serif text-xl shadow-lg"
+                      className="rounded-full px-16 py-10 border-peach/30 text-peach hover:bg-peach hover:text-white transition-all duration-700 font-serif text-2xl shadow-xl hover:shadow-peach/20"
                       onClick={handleNew}
                     >
-                      Write the Opening Note
+                      Begin the Tapestry
                     </Button>
                   </motion.div>
                 )}
@@ -155,31 +155,32 @@ export function HomePage() {
             </div>
           </div>
         </div>
-        <footer className="py-40 text-center space-y-10">
-          <div className="flex justify-center gap-8 opacity-20">
-             <Heart className="w-4 h-4 fill-peach" />
-             <Heart className="w-4 h-4 fill-peach" />
-             <Heart className="w-4 h-4 fill-peach" />
+        <footer className="py-48 text-center space-y-12">
+          <div className="flex justify-center gap-10 opacity-20">
+             <Heart className="w-4 h-4 fill-peach animate-pulse" />
+             <Heart className="w-4 h-4 fill-peach animate-pulse" style={{ animationDelay: '0.2s' }} />
+             <Heart className="w-4 h-4 fill-peach animate-pulse" style={{ animationDelay: '0.4s' }} />
           </div>
-          <div className="space-y-3">
-            <p className="text-2xl text-muted-foreground/60 font-serif italic">
-              Bound by time, freed by memory.
+          <div className="space-y-4">
+            <p className="text-3xl text-muted-foreground/50 font-serif italic">
+              Bound by love, preserved by time.
             </p>
-            <p className="text-[10px] uppercase tracking-[0.5em] text-peach/30 font-black">Eternal Warmth Archive</p>
+            <p className="text-[11px] uppercase tracking-[0.6em] text-peach/30 font-black">Eternal Warmth: A Living Archive</p>
           </div>
         </footer>
       </div>
       <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        className="fixed bottom-10 right-10 z-[60]"
+        initial={{ scale: 0, rotate: -45 }}
+        animate={{ scale: 1, rotate: 0 }}
+        className="fixed bottom-12 right-12 z-[60]"
       >
         <Button
           onClick={handleNew}
-          className="rounded-full w-16 h-16 shadow-[0_20px_50px_rgba(255,154,158,0.4)] bg-peach/80 backdrop-blur-sm hover:bg-peach text-white border-none transition-all duration-500 hover:scale-110 active:scale-90 group"
+          className="rounded-full w-20 h-20 shadow-[0_25px_60px_rgba(255,154,158,0.5)] bg-peach/90 backdrop-blur-md hover:bg-peach text-white border-none transition-all duration-500 hover:scale-110 active:scale-95 group"
           size="icon"
+          aria-label="Add new memory"
         >
-          <Plus className="w-8 h-8 transition-transform duration-700 group-hover:rotate-180" />
+          <Plus className="w-10 h-10 transition-transform duration-1000 group-hover:rotate-[360deg]" />
         </Button>
       </motion.div>
       <ComposeModal
