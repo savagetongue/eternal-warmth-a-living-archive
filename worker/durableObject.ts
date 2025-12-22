@@ -47,6 +47,12 @@ export class GlobalDurableObject extends DurableObject {
       }
       return memories;
     }
+    async deleteMemory(id: string): Promise<MemoryEntry[]> {
+      const memories = await this.getMemories();
+      const updated = memories.filter(m => m.id !== id);
+      await this.ctx.storage.put("memories", updated);
+      return updated;
+    }
     // Template boilerplate compatibility
     async getCounterValue(): Promise<number> {
       return (await this.ctx.storage.get("counter_value")) || 0;
