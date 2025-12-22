@@ -35,66 +35,70 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const [isUploading, setIsUploading] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const objectUrlsRef = useRef<string[]>([]);
   const extractDominantColor = (img: HTMLImageElement): string => {
     const canvas = document.createElement('canvas');
     canvas.width = 1;
     canvas.height = 1;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return '#F9F3E5';
+    if (!ctx) return '#FDFBF7';
     ctx.drawImage(img, 0, 0, 1, 1);
     const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-    return `rgb(${r}, ${g}, ${b})`;
+    const toHex = (c: number) => c.toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
   };
+  const cleanupObjectUrls = useCallback(() => {
+    objectUrlsRef.current.forEach((url) => {
+      if (url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    });
+    objectUrlsRef.current = [];
+  }, []);
   const generateVisualSignature = (file: File): Promise<{ preview: string; color: string }> => {
     return new Promise((resolve) => {
+      const objectUrl = URL.createObjectURL(file);
+      objectUrlsRef.current.push(objectUrl);
       if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const img = new Image();
-          img.onload = () => {
-            const color = extractDominantColor(img);
-            const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 400;
-            const MAX_HEIGHT = 300;
-            let width = img.width;
-            let height = img.height;
-            if (width > height) {
-              if (width > MAX_WIDTH) {
-                height *= MAX_WIDTH / width;
-                width = MAX_WIDTH;
-              }
-            } else {
-              if (height > MAX_HEIGHT) {
-                width *= MAX_HEIGHT / height;
-                height = MAX_HEIGHT;
-              }
+        const img = new Image();
+        img.onload = () => {
+          const color = extractDominantColor(img);
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 400;
+          const MAX_HEIGHT = 300;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
             }
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx?.drawImage(img, 0, 0, width, height);
-            resolve({ 
-              preview: canvas.toDataURL('image/jpeg', 0.7), 
-              color 
-            });
-          };
-          img.src = e.target?.result as string;
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve({
+            preview: canvas.toDataURL('image/jpeg', 0.7),
+            color
+          });
         };
-        reader.readAsDataURL(file);
+        img.src = objectUrl;
       } else {
-        // For Audio/Video, generate a themed pastel HSL color
         const hash = file.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const hue = file.type.startsWith('video/') ? (210 + (hash % 40)) : (350 + (hash % 20)); // Mist or Peach hue range
+        const hue = file.type.startsWith('video/') ? (210 + (hash % 40)) : (350 + (hash % 20));
         const color = `hsl(${hue}, 70%, 90%)`;
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          resolve({ preview: reader.result as string, color });
-        };
-        reader.readAsDataURL(file);
+        resolve({ preview: objectUrl, color });
       }
     });
   };
   const resetForm = useCallback(() => {
+    cleanupObjectUrls();
     if (initialData) {
       setContent(initialData.content);
       setType(initialData.type);
@@ -115,12 +119,13 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     setUploadProgress(0);
     setIsUploading(false);
     setShowUrlInput(false);
-  }, [initialData]);
+  }, [initialData, cleanupObjectUrls]);
   useEffect(() => {
     if (isOpen) {
       resetForm();
     }
-  }, [isOpen, resetForm]);
+    return () => cleanupObjectUrls();
+  }, [isOpen, resetForm, cleanupObjectUrls]);
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -155,7 +160,8 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
         throw new Error(json.error || "Upload failed");
       }
     } catch (err) {
-      toast.warning("Server preservation pending. Using local copy for now.");
+      console.error(err);
+      toast.warning("Server preservation pending. Archive will prioritize local version.");
     } finally {
       clearInterval(interval);
       setTimeout(() => {
@@ -280,10 +286,15 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                     "relative border-2 border-dashed rounded-[2rem] p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden",
                     isUploading ? "border-peach/30" : "hover:bg-peach/5 border-peach/10 bg-white"
                   )}
-                  style={isUploading && dominantColor ? { backgroundColor: `${dominantColor}22` } : {}}
                 >
                   {previewUrl && !isUploading && (
-                    <img src={previewUrl} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" alt="Preview Background" />
+                    <div className="absolute inset-0 z-0">
+                       {type === 'image' ? (
+                          <img src={previewUrl} className="w-full h-full object-cover opacity-20" alt="Preview" />
+                       ) : (
+                          <div className="w-full h-full opacity-10" style={{ backgroundColor: dominantColor }} />
+                       )}
+                    </div>
                   )}
                   <Upload className={cn("w-8 h-8 relative z-10", isUploading ? "text-peach animate-bounce" : "text-peach/40")} />
                   <div className="text-center relative z-10">
@@ -300,7 +311,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                     type="file"
                     ref={fileInputRef}
                     className="hidden"
-                    accept={`${type}/*`}
+                    accept={type === 'audio' ? 'audio/*' : type === 'video' ? 'video/*' : 'image/*'}
                     onChange={handleFileChange}
                     disabled={isUploading}
                   />

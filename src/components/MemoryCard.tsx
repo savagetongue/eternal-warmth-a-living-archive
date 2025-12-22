@@ -18,13 +18,17 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
   const isImage = memory.type === 'image' && displayUrl;
   const isVideo = memory.type === 'video' && displayUrl;
   const isAudio = memory.type === 'audio' && displayUrl;
-  const rotation = useMemo(() => (Math.random() * 2 - 1).toFixed(2), []);
+  const hashId = useMemo(() => {
+    return memory.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  }, [memory.id]);
+  const rotation = useMemo(() => {
+    const r = (hashId % 40) / 20 - 1; // Range -1 to 1
+    return r.toFixed(2);
+  }, [hashId]);
   const fallbackColor = useMemo(() => {
     if (memory.dominantColor) return memory.dominantColor;
-    // Generate fallback based on memory ID for consistent look across refreshes
-    const hash = memory.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return `hsl(${(hash % 360)}, 30%, 95%)`;
-  }, [memory.id, memory.dominantColor]);
+    return `hsl(${(hashId % 360)}, 30%, 95%)`;
+  }, [hashId, memory.dominantColor]);
   const handleDelete = async () => {
     if (!window.confirm("Remove this memory from our eternal archive?")) return;
     try {
@@ -98,17 +102,17 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       </div>
       {(isImage || isVideo) && (
         <div className="space-y-8">
-          <div 
+          <div
             className="relative overflow-hidden rounded-[2rem] aspect-[16/10] shadow-inner border-4 border-warm-paper"
             style={{ backgroundColor: fallbackColor }}
           >
             <AnimatePresence>
               {isMediaLoading && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center"
+                  className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10"
                 >
                   <MediaIcon className="w-12 h-12 text-foreground/10 animate-pulse mb-4" />
                   {memory.fileName && (
@@ -134,11 +138,11 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
             ) : (
               <video
                 src={displayUrl}
-                controls
                 className={cn(
                   "w-full h-full object-contain transition-opacity duration-1000",
                   isMediaLoading ? "opacity-0" : "opacity-100"
                 )}
+                controls
                 onCanPlayThrough={() => setIsMediaLoading(false)}
               />
             )}
@@ -156,14 +160,15 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
               {memory.content}
             </p>
           </div>
-          <div 
-            className="p-8 rounded-[2.5rem] border border-peach/10 flex flex-col items-center gap-6 relative overflow-hidden"
-            style={{ backgroundColor: `${fallbackColor}33` }}
-          >
+          <div className="relative p-8 rounded-[2.5rem] border border-peach/10 overflow-hidden flex flex-col items-center gap-6">
+            <div 
+              className="absolute inset-0 opacity-20" 
+              style={{ backgroundColor: fallbackColor }} 
+            />
             <div className="absolute top-2 right-4 opacity-10">
               <Disc3 className="w-20 h-20 animate-[spin_8s_linear_infinite]" />
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 relative z-10">
               <div className="p-3 rounded-full bg-white/50 text-peach animate-pulse shadow-sm">
                 <Music className="w-6 h-6" />
               </div>
@@ -177,7 +182,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
             <audio
               src={displayUrl}
               controls
-              className="w-full h-10 opacity-80 mix-blend-multiply dark:mix-blend-normal"
+              className="w-full h-10 relative z-10 opacity-80 mix-blend-multiply dark:mix-blend-normal"
             />
           </div>
         </div>

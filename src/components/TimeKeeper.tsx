@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { intervalToDuration } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-// Fixed Genesis Date: September 2nd, 2023. JS months are 0-indexed (8 = September).
 const GENESIS_DATE = new Date(2023, 8, 2, 0, 0, 0);
 export function TimeKeeper() {
   const [now, setNow] = useState(() => new Date());
@@ -46,11 +45,11 @@ export function TimeKeeper() {
                     initial={{ y: 50, opacity: 0, scale: 0.8 }}
                     animate={{ y: 0, opacity: 1, scale: 1 }}
                     exit={{ y: -50, opacity: 0, scale: 0.8 }}
-                    transition={{ 
-                      duration: 0.6, 
-                      ease: [0.34, 1.56, 0.64, 1], // Custom backOut easing
+                    transition={{
+                      duration: 0.6,
+                      ease: [0.34, 1.56, 0.64, 1],
                     }}
-                    className="text-6xl lg:text-9xl font-mono font-black text-foreground tabular-nums tracking-[-0.05em] select-none whitespace-nowrap"
+                    className="text-6xl lg:text-9xl font-mono font-black text-foreground tabular-nums tracking-[-0.05em] select-none whitespace-nowrap will-change-[transform,opacity]"
                   >
                     {(unit.value).toString().padStart(2, '0')}
                   </motion.span>
