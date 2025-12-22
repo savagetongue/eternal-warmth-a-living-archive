@@ -6,6 +6,8 @@ export interface MemoryEntry {
   type: MemoryType;
   mediaUrl?: string;
   previewUrl?: string;
+  dominantColor?: string;
+  fileName?: string;
 }
 export interface ApiResponse<T = unknown> {
   success: boolean;

@@ -1,7 +1,7 @@
 import React, { forwardRef, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO, isValid } from 'date-fns';
-import { Quote, Pencil, Trash2, Music, Disc3, Loader2 } from 'lucide-react';
+import { Quote, Pencil, Trash2, Music, Disc3, Loader2, ImageIcon, Video } from 'lucide-react';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,12 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
   const isVideo = memory.type === 'video' && displayUrl;
   const isAudio = memory.type === 'audio' && displayUrl;
   const rotation = useMemo(() => (Math.random() * 2 - 1).toFixed(2), []);
+  const fallbackColor = useMemo(() => {
+    if (memory.dominantColor) return memory.dominantColor;
+    // Generate fallback based on memory ID for consistent look across refreshes
+    const hash = memory.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return `hsl(${(hash % 360)}, 30%, 95%)`;
+  }, [memory.id, memory.dominantColor]);
   const handleDelete = async () => {
     if (!window.confirm("Remove this memory from our eternal archive?")) return;
     try {
@@ -44,6 +50,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       return "A special day";
     }
   }, [memory.date]);
+  const MediaIcon = memory.type === 'video' ? Video : memory.type === 'audio' ? Music : ImageIcon;
   return (
     <motion.div
       ref={ref}
@@ -91,19 +98,34 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       </div>
       {(isImage || isVideo) && (
         <div className="space-y-8">
-          <div className="relative overflow-hidden rounded-[2rem] aspect-[16/10] shadow-inner border-4 border-warm-paper bg-peach/5">
-            {isMediaLoading && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-peach/5 animate-pulse">
-                <Loader2 className="w-10 h-10 text-peach/20 animate-spin" />
-                <span className="mt-4 text-[9px] uppercase tracking-[0.3em] text-peach/30 font-bold">Unveiling Moment</span>
-              </div>
-            )}
+          <div 
+            className="relative overflow-hidden rounded-[2rem] aspect-[16/10] shadow-inner border-4 border-warm-paper"
+            style={{ backgroundColor: fallbackColor }}
+          >
+            <AnimatePresence>
+              {isMediaLoading && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center"
+                >
+                  <MediaIcon className="w-12 h-12 text-foreground/10 animate-pulse mb-4" />
+                  {memory.fileName && (
+                    <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/20 font-bold truncate max-w-full">
+                      {memory.fileName}
+                    </span>
+                  )}
+                  <Loader2 className="absolute bottom-6 w-5 h-5 text-foreground/5 animate-spin" />
+                </motion.div>
+              )}
+            </AnimatePresence>
             {isImage ? (
               <img
                 src={displayUrl}
                 alt={`Cherished moment from ${formattedDate}`}
                 className={cn(
-                  "w-full h-full object-cover transition-all duration-1000 group-hover:scale-110",
+                  "w-full h-full object-cover transition-opacity duration-1000 group-hover:scale-110",
                   isMediaLoading ? "opacity-0" : "opacity-100"
                 )}
                 onLoad={() => setIsMediaLoading(false)}
@@ -114,7 +136,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                 src={displayUrl}
                 controls
                 className={cn(
-                  "w-full h-full object-contain",
+                  "w-full h-full object-contain transition-opacity duration-1000",
                   isMediaLoading ? "opacity-0" : "opacity-100"
                 )}
                 onCanPlayThrough={() => setIsMediaLoading(false)}
@@ -134,15 +156,23 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
               {memory.content}
             </p>
           </div>
-          <div className="bg-peach/5 p-8 rounded-[2.5rem] border border-peach/10 flex flex-col items-center gap-6 relative overflow-hidden">
+          <div 
+            className="p-8 rounded-[2.5rem] border border-peach/10 flex flex-col items-center gap-6 relative overflow-hidden"
+            style={{ backgroundColor: `${fallbackColor}33` }}
+          >
             <div className="absolute top-2 right-4 opacity-10">
               <Disc3 className="w-20 h-20 animate-[spin_8s_linear_infinite]" />
             </div>
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-peach/10 text-peach animate-pulse">
+              <div className="p-3 rounded-full bg-white/50 text-peach animate-pulse shadow-sm">
                 <Music className="w-6 h-6" />
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-peach/60">Audio Keepsake</span>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-peach/60">Audio Keepsake</span>
+                {memory.fileName && (
+                  <span className="text-[9px] text-muted-foreground truncate max-w-[150px]">{memory.fileName}</span>
+                )}
+              </div>
             </div>
             <audio
               src={displayUrl}

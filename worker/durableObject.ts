@@ -18,7 +18,8 @@ const INITIAL_MEMORIES: MemoryEntry[] = [
     content: "A beautiful memory captured.",
     date: '2023-10-10',
     type: 'image',
-    mediaUrl: 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&q=80&w=800'
+    mediaUrl: 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&q=80&w=800',
+    dominantColor: '#FDFBF7'
   }
 ];
 export class GlobalDurableObject extends DurableObject {
@@ -29,6 +30,10 @@ export class GlobalDurableObject extends DurableObject {
           const { mood, ...rest } = m;
           if (!rest.date) {
             rest.date = new Date().toISOString().split('T')[0];
+          }
+          // Migration: Ensure legacy memories have a default dominant color if not present
+          if (rest.type !== 'text' && !rest.dominantColor) {
+            rest.dominantColor = '#F9F3E5';
           }
           return rest;
         });
