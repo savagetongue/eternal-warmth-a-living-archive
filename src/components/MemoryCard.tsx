@@ -15,13 +15,17 @@ interface MemoryCardProps {
 export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory, index, onEdit, onDelete }, ref) => {
   const [isMediaLoading, setIsMediaLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  // Priority: Remote Media -> Local High-Res Preview -> Nothing
-  const mediaSrc = memory.mediaUrl || memory.previewUrl;
+  const imageSrc = useMemo(() => {
+    return memory.mediaUrl || memory.previewUrl;
+  }, [memory.mediaUrl, memory.previewUrl]);
+  const videoSrc = useMemo(() => {
+    return memory.mediaUrl;
+  }, [memory.mediaUrl]);
   const hashId = useMemo(() => {
     return memory.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   }, [memory.id]);
   const rotation = useMemo(() => {
-    const r = (hashId % 40) / 20 - 1; // Range -1 to 1
+    const r = (hashId % 40) / 20 - 1; 
     return r.toFixed(2);
   }, [hashId]);
   const fallbackColor = useMemo(() => {
@@ -60,8 +64,8 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       layout
       initial={{ opacity: 0, y: 40, rotate: parseFloat(rotation) }}
       whileInView={{ opacity: 1, y: 0 }}
-      whileHover={{
-        y: -8,
+      whileHover={{ 
+        y: -8, 
         rotate: 0,
         transition: { duration: 0.4, ease: "easeOut" }
       }}
@@ -72,7 +76,6 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       )}
     >
       <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-peach/5 to-transparent pointer-events-none" />
-      {/* Actions */}
       <div className="absolute top-6 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 flex gap-2 translate-y-2 group-hover:translate-y-0 z-20">
         <Button
           variant="ghost"
@@ -102,7 +105,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       </div>
       {(memory.type === 'image' || memory.type === 'video') && (
         <div className="space-y-8">
-          <div
+          <div 
             className="relative overflow-hidden rounded-[2rem] aspect-[4/3] md:aspect-[16/10] h-auto min-h-[300px] shadow-inner border-4 border-warm-paper bg-muted/20"
             style={{ backgroundColor: hasError ? 'transparent' : fallbackColor }}
           >
@@ -124,36 +127,46 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                 <AlertCircle className="w-12 h-12 text-red-300 mb-4" />
                 <span className="text-[10px] uppercase tracking-[0.3em] text-red-300 font-bold">Failed to load from archive</span>
               </div>
-            ) : mediaSrc ? (
+            ) : (
               memory.type === 'image' ? (
-                <img
-                  src={mediaSrc}
-                  alt={`Cherished moment from ${formattedDate}`}
-                  className={cn(
-                    "w-full h-full object-contain transition-all duration-700",
-                    isMediaLoading ? "scale-105 blur-sm opacity-50" : "scale-100 blur-0 opacity-100"
-                  )}
-                  onLoad={() => setIsMediaLoading(false)}
-                  onError={() => { setIsMediaLoading(false); setHasError(true); }}
-                  loading="lazy"
-                />
+                imageSrc ? (
+                  <img
+                    src={imageSrc}
+                    alt={`A cherished visual memory from ${formattedDate}`}
+                    className={cn(
+                      "w-full h-full object-contain transition-all duration-700",
+                      isMediaLoading ? "scale-105 blur-sm opacity-50" : "scale-100 blur-0 opacity-100"
+                    )}
+                    onLoad={() => setIsMediaLoading(false)}
+                    onError={() => { setIsMediaLoading(false); setHasError(true); }}
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                    <ImageIcon className="w-16 h-16 text-foreground/10 mb-4" />
+                    <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/20 font-bold">Missing visual data</span>
+                  </div>
+                )
               ) : (
                 <video
-                  src={mediaSrc}
+                  src={videoSrc}
+                  poster={memory.previewUrl}
                   className={cn(
                     "w-full h-full object-contain transition-opacity duration-1000",
-                    isMediaLoading ? "opacity-0" : "opacity-100"
+                    isMediaLoading && !memory.previewUrl ? "opacity-0" : "opacity-100"
                   )}
                   controls
+                  onLoadedData={() => setIsMediaLoading(false)}
                   onCanPlayThrough={() => setIsMediaLoading(false)}
-                  onError={() => { setIsMediaLoading(false); setHasError(true); }}
+                  onError={() => { 
+                    // If video source fails, we still might have a poster
+                    if (!videoSrc) {
+                      setHasError(true);
+                    }
+                    setIsMediaLoading(false);
+                  }}
                 />
               )
-            ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                <MediaIcon className="w-16 h-16 text-foreground/10 mb-4" />
-                <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/20 font-bold">Missing visual data</span>
-              </div>
             )}
           </div>
           <p className="text-xl md:text-3xl font-serif leading-relaxed text-foreground/90 italic text-center px-4 whitespace-pre-wrap break-words">
@@ -170,7 +183,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
             </p>
           </div>
           <div className="relative p-8 rounded-[2.5rem] border border-peach/10 overflow-hidden flex flex-col items-center gap-6">
-            <div
+            <div 
               className="absolute inset-0 opacity-20"
               style={{ backgroundColor: fallbackColor }}
             />
@@ -188,10 +201,10 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                 )}
               </div>
             </div>
-            {memory.mediaUrl ? (
-              <audio
-                src={memory.mediaUrl}
-                controls
+            {videoSrc ? (
+              <audio 
+                src={videoSrc} 
+                controls 
                 className="w-full h-10 relative z-10 opacity-80 mix-blend-multiply dark:mix-blend-normal"
               />
             ) : (

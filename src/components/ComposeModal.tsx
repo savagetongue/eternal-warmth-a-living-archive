@@ -26,8 +26,8 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const [content, setContent] = useState('');
   const [type, setType] = useState<MemoryType>('text');
   const [mediaUrl, setMediaUrl] = useState('');
-  const [previewUrl, setPreviewUrl] = useState(''); // This will store the high-res base64
-  const [livePreviewUrl, setLivePreviewUrl] = useState(''); // Local Blob for instant UI
+  const [previewUrl, setPreviewUrl] = useState(''); 
+  const [livePreviewUrl, setLivePreviewUrl] = useState('');
   const [dominantColor, setDominantColor] = useState('');
   const [currentFileName, setCurrentFileName] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -44,16 +44,21 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     const ctx = canvas.getContext('2d');
     if (!ctx) return '#FDFBF7';
     ctx.drawImage(img, 0, 0, 1, 1);
-    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-    const toHex = (c: number) => c.toString(16).padStart(2, '0');
-    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    try {
+      const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+      const toHex = (c: number) => c.toString(16).padStart(2, '0');
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    } catch (e) {
+      return '#FDFBF7';
+    }
   };
   const generateHighResThumbnail = (img: HTMLImageElement): string => {
     const canvas = document.createElement('canvas');
     const originalWidth = img.naturalWidth || img.width;
     const originalHeight = img.naturalHeight || img.height;
-    // Calculate target width: max(1200, originalWidth * 0.8)
-    const targetWidth = Math.max(1200, Math.floor(originalWidth * 0.8));
+    // Optimized for Durable Object storage limits (128KB)
+    // Reducing target resolution slightly and lowering quality to ensure base64 < 128KB
+    const targetWidth = Math.max(800, Math.floor(originalWidth * 0.6));
     const scaleFactor = targetWidth / originalWidth;
     const targetHeight = Math.floor(originalHeight * scaleFactor);
     canvas.width = targetWidth;
@@ -63,8 +68,8 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-    // High-quality JPEG for fidelity (~200KB target)
-    return canvas.toDataURL('image/jpeg', 0.92);
+    // Quality 0.75 provides great balance and keeps result safely under DO limits
+    return canvas.toDataURL('image/jpeg', 0.75);
   };
   const cleanupObjectUrls = useCallback(() => {
     objectUrlsRef.current.forEach((url) => {
@@ -78,21 +83,31 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     return new Promise((resolve) => {
       const objectUrl = URL.createObjectURL(file);
       objectUrlsRef.current.push(objectUrl);
+      // Default resolution for non-images or failures
+      const hash = file.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const hue = file.type.startsWith('video/') ? (210 + (hash % 40)) : (350 + (hash % 20));
+      const fallbackColor = `hsl(${hue}, 70%, 90%)`;
       if (file.type.startsWith('image/')) {
         const img = new Image();
         img.crossOrigin = "anonymous";
+        // Timeout to prevent hanging on corrupt images
+        const timeout = setTimeout(() => {
+          resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor });
+        }, 3000);
         img.onload = () => {
+          clearTimeout(timeout);
           const color = extractDominantColor(img);
           const base64Thumb = generateHighResThumbnail(img);
           resolve({ blobUrl: objectUrl, base64Thumb, color });
         };
+        img.onerror = () => {
+          clearTimeout(timeout);
+          resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor });
+        };
         img.src = objectUrl;
       } else {
-        const hash = file.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const hue = file.type.startsWith('video/') ? (210 + (hash % 40)) : (350 + (hash % 20));
-        const color = `hsl(${hue}, 70%, 90%)`;
-        // For non-images, we don't generate a base64 thumb but use the color as signature
-        resolve({ blobUrl: objectUrl, base64Thumb: '', color });
+        // Video/Audio don't get base64 previews in this phase, just signatures
+        resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor });
       }
     });
   };
@@ -164,7 +179,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       }
     } catch (err) {
       console.warn("Upload failed, relying on high-res preview fallback", err);
-      toast.warning("Server preservation pending. High-res preview will be used.");
+      toast.warning("Server preservation pending. Offline preview will be used.");
     } finally {
       setTimeout(() => {
         setIsUploading(false);
@@ -260,8 +275,8 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                   size="sm"
                   className={cn(
                     "flex flex-col gap-1.5 h-auto py-3 rounded-2xl transition-all border-peach/10",
-                    type === item.id
-                      ? "bg-peach hover:bg-peach-dark shadow-[0_4px_12px_rgba(255,154,158,0.3)] text-white"
+                    type === item.id 
+                      ? "bg-peach hover:bg-peach-dark shadow-[0_4px_12px_rgba(255,154,158,0.3)] text-white" 
                       : "hover:border-peach/30 bg-white"
                   )}
                   onClick={() => {
@@ -333,7 +348,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                       <span className="w-full border-t border-peach/10" />
                     </div>
                     <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
-                      <span
+                      <span 
                         className="bg-warm-white px-3 text-muted-foreground cursor-pointer hover:text-peach transition-colors flex items-center gap-1 font-bold"
                         onClick={() => setShowUrlInput(!showUrlInput)}
                       >
