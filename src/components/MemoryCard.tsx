@@ -1,7 +1,7 @@
 import React, { forwardRef, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO, isValid } from 'date-fns';
-import { Quote, Pencil, Trash2, Music, Loader2, ImageIcon, Video, Link2Off } from 'lucide-react';
+import { Quote, Pencil, Trash2, Music, Loader2, ImageIcon, Video } from 'lucide-react';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -87,10 +87,18 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                 </motion.div>
               )}
             </AnimatePresence>
-            {hasError || !memory.mediaUrl ? (
+            {/* Video Fallback State - Premium Illustrative UI */}
+            {memory.type === 'video' && (hasError || !memory.mediaUrl) ? (
+              <div className="absolute inset-0 flex items-center justify-center p-8 bg-inherit">
+                <Video className="w-24 h-24 text-white/30" />
+                <span className="absolute bottom-4 right-4 bg-white/20 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white/80">
+                  Preview
+                </span>
+              </div>
+            ) : memory.type === 'image' && (hasError || !memory.mediaUrl) ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-zinc-50 dark:bg-zinc-900">
-                <Link2Off className="w-12 h-12 text-red-300 mb-4" />
-                <span className="text-[10px] uppercase tracking-[0.3em] text-red-300 font-bold">Unreachable archive source</span>
+                <ImageIcon className="w-12 h-12 text-peach/20 mb-4" />
+                <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground/40 font-bold">Unreachable source</span>
               </div>
             ) : memory.type === 'image' ? (
               <img
@@ -134,10 +142,10 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
               </div>
             </div>
             {memory.mediaUrl && !hasError ? (
-              <audio 
-                src={memory.mediaUrl} 
-                controls 
-                className="w-full relative z-10 opacity-80" 
+              <audio
+                src={memory.mediaUrl}
+                controls
+                className="w-full relative z-10 opacity-80"
                 onError={() => setHasError(true)}
               />
             ) : (
