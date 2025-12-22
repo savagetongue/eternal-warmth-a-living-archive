@@ -156,7 +156,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
             <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">The Thought</Label>
             <Textarea
               placeholder="A whisper, a shout, a silent look..."
-              className="min-h-[140px] bg-white rounded-2xl border-peach/10 focus:ring-peach/30 resize-none font-serif text-lg p-5 leading-relaxed shadow-inner"
+              className="min-h-[140px] bg-white rounded-2xl border-peach/10 focus:ring-peach/30 resize-none font-serif text-lg p-5 leading-relaxed shadow-inner placeholder:text-peach/30"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               required
@@ -178,7 +178,9 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                   size="sm"
                   className={cn(
                     "flex flex-col gap-1.5 h-auto py-3 rounded-2xl transition-all border-peach/10",
-                    type === item.id ? "bg-peach hover:bg-peach-dark shadow-md" : "hover:border-peach/30 bg-white"
+                    type === item.id 
+                      ? "bg-peach hover:bg-peach-dark shadow-[0_4px_12px_rgba(255,154,158,0.3)] text-white" 
+                      : "hover:border-peach/30 bg-white"
                   )}
                   onClick={() => setType(item.id as MemoryType)}
                 >
@@ -225,7 +227,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                       <span className="w-full border-t border-peach/10" />
                     </div>
                     <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
-                      <span 
+                      <span
                         className="bg-warm-white px-3 text-muted-foreground cursor-pointer hover:text-peach transition-colors flex items-center gap-1"
                         onClick={() => setShowUrlInput(!showUrlInput)}
                       >
@@ -247,7 +249,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
           )}
           <Button
             type="submit"
-            className="w-full py-7 rounded-2xl bg-peach hover:bg-peach-dark text-white font-serif text-xl shadow-xl hover:shadow-peach/30 transition-all duration-300 disabled:opacity-50"
+            className="w-full py-7 rounded-2xl bg-peach hover:bg-peach-dark text-white font-serif text-xl shadow-xl hover:shadow-peach/30 transition-all duration-500 disabled:opacity-50"
             disabled={isSubmitting || isUploading || !content.trim()}
           >
             {isSubmitting ? "Preserving..." : "Seal with Love"}
