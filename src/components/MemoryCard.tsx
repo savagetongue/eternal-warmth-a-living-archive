@@ -1,4 +1,4 @@
-import React, { forwardRef, useMemo, useState } from 'react';
+import React, { forwardRef, useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO, isValid } from 'date-fns';
 import { Quote, Pencil, Trash2, Music, Loader2, ImageIcon, Video } from 'lucide-react';
@@ -15,6 +15,15 @@ interface MemoryCardProps {
 export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory, index, onEdit, onDelete }, ref) => {
   const [isMediaLoading, setIsMediaLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [isRecentlyAdded, setIsRecentlyAdded] = useState(false);
+  useEffect(() => {
+    const recent = localStorage.getItem('recent_memory_id');
+    if (recent === memory.id) {
+      setIsRecentlyAdded(true);
+      const timer = setTimeout(() => setIsRecentlyAdded(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [memory.id]);
   const hashId = useMemo(() => {
     return memory.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   }, [memory.id]);
@@ -59,7 +68,8 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       whileHover={{ y: -8, rotate: 0, transition: { duration: 0.4, ease: "easeOut" } }}
       viewport={{ once: true, margin: "-50px" }}
       className={cn(
-        "group relative bg-white dark:bg-zinc-950 rounded-[2.5rem] p-6 sm:p-12 border border-peach/10 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden transition-colors duration-500",
+        "group relative bg-white dark:bg-zinc-950 rounded-[2.5rem] p-6 sm:p-12 border border-peach/10 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden transition-all duration-500",
+        isRecentlyAdded && "ring-2 ring-peach ring-offset-4 ring-offset-background",
         "before:absolute before:inset-0 before:bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')] before:opacity-[0.05] before:pointer-events-none"
       )}
     >
@@ -78,35 +88,33 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       </div>
       {(memory.type === 'image' || memory.type === 'video') && (
         <div className="space-y-8">
-          <div 
-            className="relative overflow-hidden rounded-[2rem] aspect-video w-full shadow-inner border-4 border-warm-paper dark:border-zinc-900 transition-all duration-1000" 
+          <div
+            className="relative overflow-hidden rounded-[2rem] aspect-video w-full shadow-inner border-4 border-warm-paper dark:border-zinc-900 transition-all duration-1000"
             style={{ backgroundColor: fallbackColor }}
           >
+            {/* Visual Signature Placeholder Layer */}
+            {memory.previewUrl && (
+              <img
+                src={memory.previewUrl}
+                alt="Visual signature"
+                className={cn(
+                  "absolute inset-0 w-full h-full object-contain transition-opacity duration-700 z-0",
+                  isMediaLoading ? "opacity-100 scale-100" : "opacity-0 scale-105 pointer-events-none"
+                )}
+              />
+            )}
             <AnimatePresence>
-              {(isMediaLoading || hasError) && (
-                <motion.div 
-                  initial={{ opacity: 0 }} 
-                  animate={{ opacity: 1 }} 
-                  exit={{ opacity: 0 }} 
+              {(isMediaLoading && !memory.previewUrl && !hasError) && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
                   className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-inherit"
                 >
-                  {!hasError ? (
-                    <div className="flex flex-col items-center gap-4">
-                      <MediaIcon className="w-12 h-12 text-foreground/10 animate-pulse" />
-                      <Loader2 className="w-5 h-5 text-foreground/20 animate-spin" />
-                    </div>
-                  ) : (
-                    <motion.div 
-                      initial={{ scale: 0.9, opacity: 0 }} 
-                      animate={{ scale: 1, opacity: 1 }} 
-                      className="flex flex-col items-center gap-4 text-center px-6"
-                    >
-                      <MediaIcon className="w-16 h-16 text-foreground/5 mb-2" />
-                      <div className="px-4 py-2 rounded-full bg-white/30 backdrop-blur-md border border-white/40 text-[9px] font-black uppercase tracking-[0.4em] text-foreground/60">
-                        Archived Essence {memory.fileName ? `• ${memory.fileName}` : ''}
-                      </div>
-                    </motion.div>
-                  )}
+                  <div className="flex flex-col items-center gap-4">
+                    <MediaIcon className="w-12 h-12 text-foreground/10 animate-pulse" />
+                    <Loader2 className="w-5 h-5 text-foreground/20 animate-spin" />
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -116,8 +124,8 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                   src={memory.mediaUrl}
                   alt="Archive item"
                   className={cn(
-                    "w-full h-full object-contain transition-all duration-1000 ease-in-out", 
-                    isMediaLoading ? "blur-xl opacity-0 scale-105" : "blur-0 opacity-100 scale-100"
+                    "relative z-10 w-full h-full object-contain transition-all duration-1000 ease-in-out",
+                    isMediaLoading ? "opacity-0" : "opacity-100"
                   )}
                   onLoad={() => setIsMediaLoading(false)}
                   onError={() => { setIsMediaLoading(false); setHasError(true); }}
@@ -128,7 +136,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                   src={memory.mediaUrl}
                   poster={memory.previewUrl}
                   className={cn(
-                    "w-full h-full object-contain transition-opacity duration-1000",
+                    "relative z-10 w-full h-full object-contain transition-opacity duration-1000",
                     isMediaLoading ? "opacity-0" : "opacity-100"
                   )}
                   controls={!isMediaLoading}
@@ -137,6 +145,20 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                   onError={() => { setIsMediaLoading(false); setHasError(true); }}
                 />
               )
+            )}
+            {hasError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-inherit">
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  className="flex flex-col items-center gap-4 text-center px-6"
+                >
+                  <MediaIcon className="w-16 h-16 text-foreground/5 mb-2" />
+                  <div className="px-4 py-2 rounded-full bg-white/30 backdrop-blur-md border border-white/40 text-[9px] font-black uppercase tracking-[0.4em] text-foreground/60">
+                    Archived Essence {memory.fileName ? `• ${memory.fileName}` : ''}
+                  </div>
+                </motion.div>
+              </div>
             )}
           </div>
           <p className="text-xl md:text-3xl font-serif leading-relaxed text-foreground/90 italic text-center px-4 whitespace-pre-wrap break-words">

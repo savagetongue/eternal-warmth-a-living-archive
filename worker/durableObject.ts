@@ -39,109 +39,6 @@ const INITIAL_MEMORIES: MemoryEntry[] = [
     type: 'video',
     mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-sunlight-streaming-through-a-window-onto-a-wall-41372-large.mp4',
     dominantColor: '#A1C4FD'
-  },
-  {
-    id: 'seed-6',
-    content: "The first snow of the year. You caught a snowflake on your glove and showed it to me like it was a diamond.",
-    date: '2024-01-12',
-    type: 'text'
-  },
-  {
-    id: 'seed-7',
-    content: "To Sakshi: In every timeline, in every universe, my heart would find its way back to yours.",
-    date: '2024-02-14',
-    type: 'text'
-  },
-  {
-    id: 'seed-8',
-    content: "Spring blossoms. Life is renewing itself all around us, just as our love grows deeper with every passing season.",
-    date: '2024-03-25',
-    type: 'image',
-    mediaUrl: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&q=80&w=800',
-    dominantColor: '#FECFEF'
-  },
-  {
-    id: 'seed-9',
-    content: "The song that played on the radio during our long drive. It’s now the soundtrack to my happiest memories.",
-    date: '2024-05-18',
-    type: 'audio',
-    mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-    dominantColor: '#A1C4FD',
-    fileName: 'Roadtrip_Melody.mp3'
-  },
-  {
-    id: 'seed-10',
-    content: "Summer sunsets. The sky was painted in shades of us��bold, warm, and infinitely beautiful.",
-    date: '2024-07-04',
-    type: 'video',
-    mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-clouds-moving-fast-during-a-sunset-173-large.mp4',
-    dominantColor: '#FF9A9E'
-  },
-  {
-    id: 'seed-11',
-    content: "One year of 'Us'. 365 days of learning your favorite things, and falling in love with the way you see the world.",
-    date: '2024-09-02',
-    type: 'text'
-  },
-  {
-    id: 'seed-12',
-    content: "Finding peace in the mountains. The air was cold, but your hand in mine was all the warmth I needed.",
-    date: '2024-11-15',
-    type: 'image',
-    mediaUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800',
-    dominantColor: '#A1C4FD'
-  },
-  {
-    id: 'seed-13',
-    content: "A letter from the heart: You are the anchor in my storm and the light in my morning.",
-    date: '2024-12-31',
-    type: 'text'
-  },
-  {
-    id: 'seed-14',
-    content: "Starting 2025 by your side. Every new year is just another chance to love you more than the last.",
-    date: '2025-01-01',
-    type: 'image',
-    mediaUrl: 'https://images.unsplash.com/photo-1514525253344-f81f3f74412f?auto=format&fit=crop&q=80&w=800',
-    dominantColor: '#FF9A9E'
-  },
-  {
-    id: 'seed-15',
-    content: "The quiet rhythm of a rainy afternoon. Just you, me, and the sound of the world slowing down.",
-    date: '2025-03-10',
-    type: 'video',
-    mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-rain-drops-on-a-window-pane-1522-large.mp4',
-    dominantColor: '#F9F3E5'
-  },
-  {
-    id: 'seed-16',
-    content: "Shared dreams of a small cottage with a blue door. It's not just a house; it's the future I see with you.",
-    date: '2025-04-05',
-    type: 'text'
-  },
-  {
-    id: 'seed-17',
-    content: "The tiny kindnesses you show every day—the extra sugar in my tea, the way you adjust my scarf. These are the true monuments of our love.",
-    date: '2025-05-12',
-    type: 'text'
-  },
-  {
-    id: 'seed-18',
-    content: "Promises made under the midnight sky. Some spoken, some felt in the silence between our heartbeats.",
-    date: '2025-06-20',
-    type: 'text'
-  },
-  {
-    id: 'seed-19',
-    content: "Learning to bridge our differences. Every compromise is a bridge built towards a stronger 'Us'.",
-    date: '2025-07-08',
-    type: 'text'
-  },
-  {
-    id: 'seed-20',
-    content: "To many more years of this beautiful unfolding. You are my favorite story, and I can't wait to read the next chapter.",
-    date: '2025-08-30',
-    type: 'text'
   }
 ];
 export class GlobalDurableObject extends DurableObject {
@@ -160,14 +57,21 @@ export class GlobalDurableObject extends DurableObject {
       const memories = await this.ctx.storage.get("memories");
       if (memories) {
         const cleaned = (memories as any[]).map((m) => {
-          const { mood, ...rest } = m;
-          if (!rest.date) {
-            rest.date = new Date().toISOString().split('T')[0];
+          // Explicitly preserve visual signatures and metadata during deserialization
+          const entry: MemoryEntry = {
+            id: m.id,
+            content: m.content || "",
+            date: m.date || new Date().toISOString().split('T')[0],
+            type: m.type || 'text',
+            mediaUrl: m.mediaUrl,
+            previewUrl: m.previewUrl, // Hardened: Ensure previewUrl is strictly mapped
+            dominantColor: m.dominantColor,
+            fileName: m.fileName
+          };
+          if (entry.type !== 'text' && (!entry.dominantColor || !entry.dominantColor.startsWith('#'))) {
+            entry.dominantColor = entry.dominantColor || '#FDFBF7';
           }
-          if (rest.type !== 'text' && (!rest.dominantColor || !rest.dominantColor.startsWith('#'))) {
-            rest.dominantColor = rest.dominantColor || '#FDFBF7';
-          }
-          return rest as MemoryEntry;
+          return entry;
         });
         return await this.sortMemories(cleaned);
       }
@@ -179,8 +83,15 @@ export class GlobalDurableObject extends DurableObject {
       if (!entry.content?.trim()) {
         throw new Error("Archive entries cannot be empty of narrative.");
       }
+      // Ensure visual signature integrity before saving
+      const sanitizedEntry: MemoryEntry = {
+        ...entry,
+        previewUrl: entry.previewUrl || undefined,
+        dominantColor: entry.dominantColor || undefined,
+        fileName: entry.fileName || undefined
+      };
       const memories = await this.getMemories();
-      const updated = await this.sortMemories([...memories, entry]);
+      const updated = await this.sortMemories([...memories, sanitizedEntry]);
       await this.ctx.storage.put("memories", updated);
       return updated;
     }
@@ -191,6 +102,7 @@ export class GlobalDurableObject extends DurableObject {
       const memories = await this.getMemories();
       const index = memories.findIndex(m => m.id === id);
       if (index !== -1) {
+        // Merge updates carefully to not lose previewUrl if not provided in the patch
         memories[index] = { ...memories[index], ...updates };
         const updated = await this.sortMemories(memories);
         await this.ctx.storage.put("memories", updated);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { TimeKeeper } from '@/components/TimeKeeper';
 import { MemoryCard } from '@/components/MemoryCard';
@@ -14,11 +14,13 @@ export function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [editingMemory, setEditingMemory] = useState<MemoryEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const fetchMemories = async () => {
+  const fetchMemories = useCallback(async () => {
     try {
       const res = await fetch('/api/memories');
       const json = await res.json();
       if (json.success) {
+        // Payload verification: Inspect previewUrl and mediaUrl integrity
+        console.log('[ARCHIVE PAYLOAD]', json.data);
         setMemories(json.data);
       }
     } catch (err) {
@@ -26,10 +28,10 @@ export function HomePage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
   useEffect(() => {
     fetchMemories();
-  }, []);
+  }, [fetchMemories]);
   const handleEdit = (memory: MemoryEntry) => {
     setEditingMemory(memory);
     setIsModalOpen(true);
@@ -37,6 +39,9 @@ export function HomePage() {
   const handleNew = () => {
     setEditingMemory(null);
     setIsModalOpen(true);
+  };
+  const handleSuccess = async () => {
+    await fetchMemories();
   };
   const { scrollYProgress } = useScroll();
   const y1 = useTransform(scrollYProgress, [0, 1], [0, -400]);
@@ -46,7 +51,6 @@ export function HomePage() {
     <div className="min-h-screen bg-transparent relative selection:bg-peach/30 overflow-x-hidden">
       <ThemeToggle className="fixed top-6 right-6 lg:right-10 z-50" />
       <Toaster richColors position="bottom-right" closeButton />
-      {/* Dynamic Environmental Background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <motion.div
           style={{ y: y1 }}
@@ -61,7 +65,6 @@ export function HomePage() {
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="py-24 md:py-36 flex flex-col items-center">
-          {/* Hero Section */}
           <motion.div
             style={{ opacity: heroOpacity }}
             initial={{ opacity: 0, y: 30 }}
@@ -92,7 +95,6 @@ export function HomePage() {
               <ChevronDown className="w-5 h-5" />
             </motion.div>
           </motion.div>
-          {/* Feed Content */}
           <div className="w-full space-y-32 max-w-6xl">
             <div className="flex flex-col md:flex-row items-center justify-between border-b border-peach/10 pb-12 gap-8">
               <div className="space-y-3 text-center md:text-left">
@@ -183,7 +185,6 @@ export function HomePage() {
           </div>
         </footer>
       </div>
-      {/* Floating Action Button */}
       <motion.div
         initial={{ scale: 0, rotate: -45 }}
         animate={{ scale: 1, rotate: 0 }}
@@ -203,7 +204,7 @@ export function HomePage() {
         initialData={editingMemory}
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
-        onSuccess={fetchMemories}
+        onSuccess={handleSuccess}
       />
     </div>
   );

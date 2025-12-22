@@ -34,7 +34,6 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const [isProcessing, setIsProcessing] = useState(false);
   const [signatureCaptured, setSignatureCaptured] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const urlInputRef = useRef<HTMLInputElement>(null);
   const objectUrlsRef = useRef<string[]>([]);
   const cleanupObjectUrls = useCallback(() => {
     objectUrlsRef.current.forEach((url) => {
@@ -79,7 +78,6 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     return new Promise((resolve) => {
       const objectUrl = URL.createObjectURL(file);
       objectUrlsRef.current.push(objectUrl);
-      const hash = file.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const fallbackColor = file.type.startsWith('video/') ? '#A1C4FD' : '#FF9A9E';
       if (file.type.startsWith('image/')) {
         const img = new Image();
@@ -102,7 +100,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
         video.playsInline = true;
         const timeout = setTimeout(() => resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor }), 10000);
         video.onloadedmetadata = () => {
-          video.currentTime = 0.5; // Seek a bit to avoid black frame
+          video.currentTime = 0.5;
         };
         video.onseeked = () => {
           clearTimeout(timeout);
@@ -151,8 +149,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     if (isOpen) {
       resetForm();
     }
-    return () => cleanupObjectUrls();
-  }, [isOpen, resetForm, cleanupObjectUrls]);
+  }, [isOpen, resetForm]);
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -176,7 +173,9 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     e.preventDefault();
     if (!content.trim()) return;
     setIsSubmitting(true);
-    const entryData: Omit<MemoryEntry, 'id'> = {
+    const newId = initialData?.id || uuidv4();
+    const entryData: MemoryEntry = {
+      id: newId,
       content: content.trim(),
       type,
       mediaUrl: type === 'text' ? undefined : (mediaUrl || undefined),
@@ -188,13 +187,13 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     try {
       const url = initialData ? `/api/memories/${initialData.id}` : '/api/memories';
       const method = initialData ? 'PUT' : 'POST';
-      const payload = initialData ? entryData : { ...entryData, id: uuidv4() };
       const res = await fetch(url, {
         method,
-        body: JSON.stringify(payload),
+        body: JSON.stringify(entryData),
         headers: { 'Content-Type': 'application/json' }
       });
       if (res.ok) {
+        localStorage.setItem('recent_memory_id', newId);
         toast.success(initialData ? "Memory refined." : "Memory archived.");
         onOpenChange(false);
         onSuccess();
@@ -280,7 +279,6 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                   <LinkIcon className="w-3 h-3" /> Permanent Source (URL)
                 </Label>
                 <Input
-                  ref={urlInputRef}
                   placeholder={`Direct URL to ${type}...`}
                   className="bg-white rounded-xl border-peach/20 focus:ring-peach/30 h-12 shadow-sm font-sans"
                   value={mediaUrl}
