@@ -14,7 +14,6 @@ export function TimeKeeper() {
       end: now,
     });
   }, [now]);
-
   const displayUnits = [
     { label: 'Years', value: duration.years },
     { label: 'Months', value: duration.months },
@@ -24,7 +23,7 @@ export function TimeKeeper() {
     { label: 'Seconds', value: duration.seconds },
   ];
   return (
-    <div className="flex flex-col items-center justify-center space-y-12 py-16">
+    <div className="flex flex-col items-center justify-center space-y-12 py-20 md:py-32">
       <div className="flex flex-col items-center gap-3">
         <motion.p
           animate={{ opacity: [0.3, 1, 0.3], scale: [0.98, 1, 0.98] }}
@@ -35,10 +34,10 @@ export function TimeKeeper() {
         </motion.p>
         <div className="h-px w-12 bg-gradient-to-r from-transparent via-peach/40 to-transparent" />
       </div>
-      <div className="flex flex-wrap justify-center gap-x-12 gap-y-10 max-w-5xl px-4">
+      <div className="flex flex-wrap justify-center items-center gap-x-4 sm:gap-x-8 gap-y-6 md:gap-y-10 max-w-6xl px-4">
         {displayUnits.map((unit) => (
-          <div key={unit.label} className="flex flex-col items-center min-w-[80px]">
-            <div className="relative overflow-hidden h-16 md:h-24 flex items-center justify-center w-[3.2ch]">
+          <div key={unit.label} className="flex flex-col items-center min-w-[100px] sm:min-w-[120px]">
+            <div className="relative overflow-hidden h-20 lg:h-28 flex items-center justify-center w-[4ch] lg:w-[4.5ch]">
               <AnimatePresence mode="popLayout">
                 <motion.span
                   key={unit.value}
@@ -46,7 +45,7 @@ export function TimeKeeper() {
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -30, opacity: 0 }}
                   transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                  className="text-6xl md:text-8xl font-mono font-black text-foreground tabular-nums tracking-tighter"
+                  className="text-5xl md:text-7xl lg:text-8xl font-mono font-black text-foreground tabular-nums tracking-[-0.05em]"
                 >
                   {(unit.value ?? 0).toString().padStart(3, '0')}
                 </motion.span>
