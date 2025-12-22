@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { Env } from './core-utils';
-import type { MemoryEntry, ApiResponse } from '@shared/types';
+import type { MemoryEntry, ApiResponse } from '../shared/types';
 type ExtendedEnv = Env & {
   MEMORIES_BUCKET?: R2Bucket;
 };
