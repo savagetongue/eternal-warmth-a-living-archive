@@ -65,18 +65,18 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
         <Button
           variant="ghost"
           size="icon"
+          aria-label="Edit memory"
           className="h-10 w-10 rounded-full bg-warm-cream/80 backdrop-blur-sm border border-peach/20 hover:bg-peach/20 text-peach"
           onClick={() => onEdit?.(memory)}
-          title="Edit memory"
         >
           <Pencil className="w-4 h-4" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
+          aria-label="Delete memory"
           className="h-10 w-10 rounded-full bg-red-50/80 backdrop-blur-sm border border-red-100 hover:bg-red-100 text-red-400"
           onClick={handleDelete}
-          title="Delete memory"
         >
           <Trash2 className="w-4 h-4" />
         </Button>
@@ -116,11 +116,11 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                   "w-full h-full object-contain",
                   isMediaLoading ? "opacity-0" : "opacity-100"
                 )}
-                onLoadedData={() => setIsMediaLoading(false)}
+                onCanPlayThrough={() => setIsMediaLoading(false)}
               />
             )}
           </div>
-          <p className="text-xl md:text-3xl font-serif leading-relaxed text-foreground/90 italic text-center px-4 whitespace-pre-wrap">
+          <p className="text-xl md:text-3xl font-serif leading-relaxed text-foreground/90 italic text-center px-4 whitespace-pre-wrap break-words">
             "{memory.content}"
           </p>
         </div>
@@ -129,13 +129,13 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
         <div className="space-y-10">
           <div className="relative text-center px-8">
             <Quote className="absolute -top-4 -left-2 w-16 h-16 text-peach/5 -rotate-12" />
-            <p className="text-xl md:text-4xl font-serif leading-relaxed text-foreground text-pretty whitespace-pre-wrap">
+            <p className="text-xl md:text-4xl font-serif leading-relaxed text-foreground text-pretty whitespace-pre-wrap break-words">
               {memory.content}
             </p>
           </div>
           <div className="bg-peach/5 p-8 rounded-[2.5rem] border border-peach/10 flex flex-col items-center gap-6 relative overflow-hidden">
             <div className="absolute top-2 right-4 opacity-10">
-              <Disc3 className="w-20 h-20" />
+              <Disc3 className="w-20 h-20 animate-[spin_8s_linear_infinite]" />
             </div>
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-peach/10 text-peach animate-pulse">
@@ -154,7 +154,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       {memory.type === 'text' && (
         <div className="relative py-8 md:py-12 px-4 md:px-6">
           <Quote className="absolute -top-6 -left-4 w-16 md:w-24 h-16 md:h-24 text-peach/5 -rotate-6" />
-          <p className="text-xl md:text-4xl font-serif leading-relaxed text-foreground text-pretty text-center selection:bg-peach/20 whitespace-pre-wrap">
+          <p className="text-xl md:text-4xl font-serif leading-relaxed text-foreground text-pretty text-center selection:bg-peach/20 whitespace-pre-wrap break-words">
             {memory.content}
           </p>
           <Quote className="absolute -bottom-6 -right-4 w-16 md:w-24 h-16 md:h-24 text-peach/5 rotate-[174deg]" />

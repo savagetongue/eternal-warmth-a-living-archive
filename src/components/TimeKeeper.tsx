@@ -29,7 +29,7 @@ export function TimeKeeper() {
         <motion.p
           animate={{ opacity: [0.3, 0.8, 0.3], scale: [0.99, 1, 0.99] }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          className="text-[12px] font-black uppercase tracking-[0.8em] text-peach italic ml-[0.8em]"
+          className="text-[12px] font-black uppercase tracking-[0.8em] text-peach italic ml-[0.8em] select-none"
         >
           Bonded for eternity
         </motion.p>
@@ -38,34 +38,39 @@ export function TimeKeeper() {
       <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-x-8 lg:gap-x-12 gap-y-4 sm:gap-y-12 max-w-7xl p-8 w-full">
         {displayUnits.map((unit) => (
           <div key={unit.label} className="flex flex-col items-center flex-shrink-0 min-w-[120px] lg:min-w-[160px]">
-            <div className="relative overflow-visible h-24 lg:h-36 flex items-center justify-center min-w-[4.5ch] lg:min-w-[5ch]">
-              <AnimatePresence mode="popLayout">
-                <motion.span
-                  key={unit.value}
-                  initial={{ y: 40, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: -40, opacity: 0 }}
-                  transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-                  className="text-6xl lg:text-9xl font-mono font-black text-foreground tabular-nums tracking-[-0.08em] select-none whitespace-nowrap"
-                >
-                  {(unit.value).toString().padStart(2, '0')}
-                </motion.span>
-              </AnimatePresence>
+            <div className="relative overflow-visible h-24 lg:h-36 flex items-center justify-center">
+              <div className="relative flex items-center justify-center w-[2.5ch] lg:w-[3ch]">
+                <AnimatePresence mode="popLayout">
+                  <motion.span
+                    key={unit.value}
+                    initial={{ y: 50, opacity: 0, scale: 0.8 }}
+                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                    exit={{ y: -50, opacity: 0, scale: 0.8 }}
+                    transition={{ 
+                      duration: 0.6, 
+                      ease: [0.34, 1.56, 0.64, 1], // Custom backOut easing
+                    }}
+                    className="text-6xl lg:text-9xl font-mono font-black text-foreground tabular-nums tracking-[-0.05em] select-none whitespace-nowrap"
+                  >
+                    {(unit.value).toString().padStart(2, '0')}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
               <motion.div
-                animate={{ scale: [1, 1.2, 1], opacity: [0.05, 0.15, 0.05] }}
-                transition={{ duration: 5, repeat: Infinity }}
-                className="absolute inset-0 bg-peach/20 blur-[80px] rounded-full -z-10 pointer-events-none"
+                animate={{ scale: [1, 1.3, 1], opacity: [0.08, 0.2, 0.08] }}
+                transition={{ duration: 6, repeat: Infinity }}
+                className="absolute inset-0 bg-peach/30 blur-[100px] rounded-full -z-10 pointer-events-none"
               />
             </div>
-            <span className="text-xs lg:text-sm uppercase tracking-[0.5em] text-muted-foreground/50 mt-6 lg:mt-8 font-black ml-[0.5em] select-none whitespace-nowrap">
+            <span className="text-xs lg:text-sm uppercase tracking-[0.5em] text-muted-foreground/60 mt-6 lg:mt-8 font-black ml-[0.5em] select-none whitespace-nowrap">
               {unit.label}
             </span>
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-5 pt-8 opacity-30">
+      <div className="flex items-center gap-5 pt-8 opacity-40">
         <div className="w-1.5 h-1.5 rounded-full bg-peach animate-ping" />
-        <span className="text-[10px] font-serif italic text-foreground tracking-[0.5em] uppercase font-bold">ticking forever</span>
+        <span className="text-[10px] font-serif italic text-foreground tracking-[0.5em] uppercase font-bold select-none">ticking forever</span>
         <div className="w-1.5 h-1.5 rounded-full bg-peach animate-ping" style={{ animationDelay: '1s' }} />
       </div>
     </div>
