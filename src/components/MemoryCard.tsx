@@ -14,9 +14,13 @@ interface MemoryCardProps {
 }
 export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory, index, onEdit, onDelete }, ref) => {
   const [isMediaLoading, setIsMediaLoading] = useState(true);
-  const displayUrl = memory.mediaUrl || memory.previewUrl;
-  const isImage = memory.type === 'image' && displayUrl;
-  const isVideo = memory.type === 'video' && displayUrl;
+  
+  React.useEffect(() => {
+    if (!memory.mediaUrl) {
+      setIsMediaLoading(false);
+    }
+  }, [memory.mediaUrl]);
+  const displayUrl = memory.mediaUrl;
   const isAudio = memory.type === 'audio' && displayUrl;
   const hashId = useMemo(() => {
     return memory.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -100,51 +104,64 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
         </span>
         <div className="h-px flex-1 bg-peach/10" />
       </div>
-      {(isImage || isVideo) && (
+      {(memory.type === 'image' || memory.type === 'video') && (
         <div className="space-y-8">
           <div
             className="relative overflow-hidden rounded-[2rem] aspect-[16/10] shadow-inner border-4 border-warm-paper"
             style={{ backgroundColor: fallbackColor }}
           >
-            <AnimatePresence>
-              {isMediaLoading && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10"
-                >
-                  <MediaIcon className="w-12 h-12 text-foreground/10 animate-pulse mb-4" />
-                  {memory.fileName && (
-                    <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/20 font-bold truncate max-w-full">
-                      {memory.fileName}
-                    </span>
+            {memory.mediaUrl ? (
+              <>
+                <AnimatePresence>
+                  {isMediaLoading && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10"
+                    >
+                      <MediaIcon className="w-12 h-12 text-foreground/10 animate-pulse mb-4" />
+                      {memory.fileName && (
+                        <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/20 font-bold truncate max-w-full">
+                          {memory.fileName}
+                        </span>
+                      )}
+                      <Loader2 className="absolute bottom-6 w-5 h-5 text-foreground/5 animate-spin" />
+                    </motion.div>
                   )}
-                  <Loader2 className="absolute bottom-6 w-5 h-5 text-foreground/5 animate-spin" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-            {isImage ? (
-              <img
-                src={displayUrl}
-                alt={`Cherished moment from ${formattedDate}`}
-                className={cn(
-                  "w-full h-full object-cover transition-opacity duration-1000 group-hover:scale-110",
-                  isMediaLoading ? "opacity-0" : "opacity-100"
+                </AnimatePresence>
+                {memory.type === 'image' ? (
+                  <img
+                    src={memory.mediaUrl}
+                    alt={`Cherished moment from ${formattedDate}`}
+                    className={cn(
+                      "w-full h-full object-cover transition-opacity duration-1000 group-hover:scale-110",
+                      isMediaLoading ? "opacity-0" : "opacity-100"
+                    )}
+                    onLoad={() => setIsMediaLoading(false)}
+                    loading="lazy"
+                  />
+                ) : (
+                  <video
+                    src={memory.mediaUrl}
+                    className={cn(
+                      "w-full h-full object-contain transition-opacity duration-1000",
+                      isMediaLoading ? "opacity-0" : "opacity-100"
+                    )}
+                    controls
+                    onCanPlayThrough={() => setIsMediaLoading(false)}
+                  />
                 )}
-                onLoad={() => setIsMediaLoading(false)}
-                loading="lazy"
-              />
+              </>
             ) : (
-              <video
-                src={displayUrl}
-                className={cn(
-                  "w-full h-full object-contain transition-opacity duration-1000",
-                  isMediaLoading ? "opacity-0" : "opacity-100"
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
+                <MediaIcon className="w-16 h-16 text-foreground/10 mb-4" />
+                {memory.fileName && (
+                  <span className="text-sm uppercase tracking-[0.3em] text-foreground/20 font-bold truncate max-w-full">
+                    {memory.fileName}
+                  </span>
                 )}
-                controls
-                onCanPlayThrough={() => setIsMediaLoading(false)}
-              />
+              </div>
             )}
           </div>
           <p className="text-xl md:text-3xl font-serif leading-relaxed text-foreground/90 italic text-center px-4 whitespace-pre-wrap break-words">
@@ -152,7 +169,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
           </p>
         </div>
       )}
-      {isAudio && (
+      {memory.type === 'audio' && (
         <div className="space-y-10">
           <div className="relative text-center px-8">
             <Quote className="absolute -top-4 -left-2 w-16 h-16 text-peach/5 -rotate-12" />
@@ -179,11 +196,18 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                 )}
               </div>
             </div>
-            <audio
-              src={displayUrl}
-              controls
-              className="w-full h-10 relative z-10 opacity-80 mix-blend-multiply dark:mix-blend-normal"
-            />
+            {memory.mediaUrl ? (
+              <audio
+                src={memory.mediaUrl}
+                controls
+                className="w-full h-10 relative z-10 opacity-80 mix-blend-multiply dark:mix-blend-normal"
+              />
+            ) : (
+              <div className="w-full h-12 flex items-center justify-center bg-peach/5 border-2 border-dashed border-peach/20 rounded-xl relative z-10">
+                <Music className="w-6 h-6 text-peach/30 mr-2" />
+                <span className="text-sm text-muted-foreground/60 font-medium">Ready for playback</span>
+              </div>
+            )}
           </div>
         </div>
       )}
