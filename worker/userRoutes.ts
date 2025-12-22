@@ -17,7 +17,6 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
         const data = await stub.addMemory(body);
         return c.json({ success: true, data } satisfies ApiResponse<MemoryEntry[]>);
     });
-    // Serve media from R2 bucket
     app.get('/api/media/:type/:filename', async (c) => {
         const type = c.req.param('type');
         const filename = c.req.param('filename');
@@ -48,13 +47,16 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
                 return c.json({ success: false, error: 'File size exceeds 100MB limit' }, 413);
             }
             const extension = file.name.split('.').pop() || 'bin';
-            const filename = `${crypto.randomUUID()}-${Date.now()}.${extension}`;
+            const uuid = crypto.randomUUID();
+            const filename = `${uuid}-${Date.now()}.${extension}`;
             const key = `${type}/${filename}`;
-            const seed = filename.split('.')[0];
+            // Seed logic: use the first block of the UUID for consistent previews across sessions
+            const seed = uuid.split('-')[0];
             let placeholderUrl;
             switch (type) {
                 case 'image':
-                    placeholderUrl = `https://picsum.photos/seed/${seed}/800/600`;
+                    // Added blur parameter for that "Illustrative" soft look
+                    placeholderUrl = `https://picsum.photos/seed/${seed}/1200/800?blur=2`;
                     break;
                 case 'video':
                     placeholderUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
@@ -65,21 +67,18 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
                 default:
                     placeholderUrl = 'https://via.placeholder.com/400x300/FF6B6B/FFFFFF?text=Media';
             }
-
             try {
                 if (c.env.MEMORIES_BUCKET) {
                     await c.env.MEMORIES_BUCKET.put(key, await file.arrayBuffer(), {
                         httpMetadata: { contentType: file.type }
                     });
-                    // Return a consistent relative URL that the GET /api/media route handles
                     const publicUrl = `/api/media/${key}`;
                     return c.json({ success: true, data: { url: publicUrl, key } });
                 }
             } catch (uploadErr) {
                 console.error('R2 upload failed:', uploadErr);
             }
-
-            return c.json({ success: true, data: { url: placeholderUrl || `/api/media/${key}`, key } });
+            return c.json({ success: true, data: { url: placeholderUrl, key } });
         } catch (err) {
             console.error('Upload error:', err);
             return c.json({ success: false, error: 'Failed to upload media' }, 500);

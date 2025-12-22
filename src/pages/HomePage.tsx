@@ -5,7 +5,7 @@ import { MemoryCard } from '@/components/MemoryCard';
 import { ComposeModal } from '@/components/ComposeModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Toaster } from '@/components/ui/sonner';
-import { Sparkles, Heart, Plus, Feather } from 'lucide-react';
+import { Sparkles, Heart, Plus, Feather, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
@@ -78,22 +78,30 @@ export function HomePage() {
               </div>
             </div>
             <p className="text-2xl md:text-4xl font-serif italic text-muted-foreground/60 max-w-4xl mx-auto leading-relaxed px-8 text-balance">
-              "A sanctuary where time is a slow river, preserving the infinite beauty of our shared light."
+              "A sanctuary where our story unfolds page by page, growing into an eternal tapestry of shared light."
             </p>
             <TimeKeeper />
+            <motion.div 
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="pt-12 text-peach/40 flex flex-col items-center gap-2"
+            >
+              <span className="text-[10px] uppercase tracking-[0.5em] font-black">Read our journey</span>
+              <ChevronDown className="w-5 h-5" />
+            </motion.div>
           </motion.div>
           {/* Journal Section */}
           <div className="w-full space-y-32 max-w-6xl">
             <div className="flex flex-col md:flex-row items-center justify-between border-b border-peach/10 pb-12 gap-8">
               <div className="space-y-3 text-center md:text-left">
                 <h2 className="text-5xl font-serif font-bold text-foreground flex items-center justify-center md:justify-start gap-5">
-                  <Heart className="w-8 h-8 text-peach fill-peach/20" />
-                  Journal of Days
+                  <Sparkles className="w-8 h-8 text-peach fill-peach/20" />
+                  The Unfolding Tapestry
                 </h2>
-                <p className="text-lg text-muted-foreground italic font-serif opacity-70">Echoes preserved in time</p>
+                <p className="text-lg text-muted-foreground italic font-serif opacity-70">A chronological archive of our love</p>
               </div>
               <div className="px-6 py-2.5 rounded-full bg-white/40 text-[11px] uppercase tracking-[0.4em] text-muted-foreground font-black border border-peach/10 shadow-sm backdrop-blur-sm">
-                {memories.length} Moments Archived
+                Journeying through {memories.length} Moments
               </div>
             </div>
             <div className="flex flex-col space-y-48 md:space-y-64 items-center">
@@ -136,14 +144,14 @@ export function HomePage() {
                     </div>
                     <div className="space-y-4">
                       <p className="font-serif text-4xl italic text-muted-foreground/80">Our story begins here...</p>
-                      <p className="text-xs text-muted-foreground/40 tracking-[0.5em] uppercase font-black">Open the archive to eternity</p>
+                      <p className="text-xs text-muted-foreground/40 tracking-[0.5em] uppercase font-black">Begin the chronicle of forever</p>
                     </div>
                     <Button
                       variant="outline"
                       className="rounded-full px-16 py-10 border-peach/30 text-peach hover:bg-peach hover:text-white transition-all duration-700 font-serif text-2xl shadow-xl hover:shadow-peach/20"
                       onClick={handleNew}
                     >
-                      Begin the Tapestry
+                      Archive First Memory
                     </Button>
                   </motion.div>
                 )}
@@ -159,7 +167,7 @@ export function HomePage() {
           </div>
           <div className="space-y-4">
             <p className="text-3xl text-muted-foreground/50 font-serif italic">
-              Bound by love, preserved by time.
+              Each moment a thread, each thread a forever.
             </p>
             <p className="text-[11px] uppercase tracking-[0.6em] text-peach/30 font-black">Eternal Warmth: A Living Archive</p>
           </div>
