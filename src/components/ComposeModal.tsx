@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CheckCircle2, Feather, ImageIcon, Video, Music, Type, Upload, Calendar, Link as LinkIcon, Info } from 'lucide-react';
+import { CheckCircle2, Feather, ImageIcon, Video, Music, Type, Upload, Calendar, Link as LinkIcon, Info, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { MemoryEntry, MemoryType } from '@shared/types';
 import { cn } from '@/lib/utils';
@@ -44,7 +44,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     });
     objectUrlsRef.current = [];
   }, []);
-  const extractDominantColor = (img: HTMLImageElement): string => {
+  const extractDominantColor = (img: HTMLImageElement | HTMLCanvasElement): string => {
     const canvas = document.createElement('canvas');
     canvas.width = 1;
     canvas.height = 1;
@@ -59,38 +59,35 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       return '#FDFBF7';
     }
   };
-  const generateHighResThumbnail = (img: HTMLImageElement): string => {
+  const generateThumbnailFromSource = (source: HTMLImageElement | HTMLVideoElement): string => {
     const canvas = document.createElement('canvas');
-    const originalWidth = img.naturalWidth || img.width;
-    const originalHeight = img.naturalHeight || img.height;
-    const targetWidth = Math.min(500, originalWidth);
-    const scaleFactor = targetWidth / originalWidth;
-    const targetHeight = Math.floor(originalHeight * scaleFactor);
+    const sourceWidth = (source as any).naturalWidth || (source as any).videoWidth || source.width;
+    const sourceHeight = (source as any).naturalHeight || (source as any).videoHeight || source.height;
+    const targetWidth = Math.min(600, sourceWidth);
+    const scaleFactor = targetWidth / sourceWidth;
+    const targetHeight = Math.floor(sourceHeight * scaleFactor);
     canvas.width = targetWidth;
     canvas.height = targetHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) return '';
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-    return canvas.toDataURL('image/jpeg', 0.5); // Durable Objects have size limits, keep it compact
+    ctx.drawImage(source, 0, 0, targetWidth, targetHeight);
+    return canvas.toDataURL('image/jpeg', 0.6);
   };
   const generateSignature = (file: File): Promise<{ blobUrl: string; base64Thumb: string; color: string }> => {
     return new Promise((resolve) => {
       const objectUrl = URL.createObjectURL(file);
       objectUrlsRef.current.push(objectUrl);
       const hash = file.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const hue = file.type.startsWith('video/') ? (210 + (hash % 40)) : (350 + (hash % 20));
-      const fallbackColor = `hsl(${hue}, 70%, 90%)`;
+      const fallbackColor = file.type.startsWith('video/') ? '#A1C4FD' : '#FF9A9E';
       if (file.type.startsWith('image/')) {
         const img = new Image();
-        const timeout = setTimeout(() => {
-          resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor });
-        }, 5000);
+        const timeout = setTimeout(() => resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor }), 5000);
         img.onload = () => {
           clearTimeout(timeout);
           const color = extractDominantColor(img);
-          const base64Thumb = generateHighResThumbnail(img);
+          const base64Thumb = generateThumbnailFromSource(img);
           resolve({ blobUrl: objectUrl, base64Thumb, color });
         };
         img.onerror = () => {
@@ -98,6 +95,28 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
           resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor });
         };
         img.src = objectUrl;
+      } else if (file.type.startsWith('video/')) {
+        const video = document.createElement('video');
+        video.preload = 'metadata';
+        video.muted = true;
+        video.playsInline = true;
+        const timeout = setTimeout(() => resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor }), 10000);
+        video.onloadedmetadata = () => {
+          video.currentTime = 0.5; // Seek a bit to avoid black frame
+        };
+        video.onseeked = () => {
+          clearTimeout(timeout);
+          const base64Thumb = generateThumbnailFromSource(video);
+          const color = extractDominantColor(video as any);
+          resolve({ blobUrl: objectUrl, base64Thumb, color });
+          video.remove();
+        };
+        video.onerror = () => {
+          clearTimeout(timeout);
+          resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor });
+          video.remove();
+        };
+        video.src = objectUrl;
       } else {
         resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor });
       }
@@ -146,7 +165,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       setPreviewUrl(base64Thumb);
       setDominantColor(color);
       setSignatureCaptured(true);
-      toast.success("Visual signature captured.");
+      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} signature captured.`);
     } catch (err) {
       toast.error("Failed to process local preview.");
     } finally {
@@ -156,10 +175,6 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
-    if (type !== 'text' && !mediaUrl && !previewUrl && !livePreviewUrl) {
-      toast.error("Please provide a URL or a visual signature for this memory.");
-      return;
-    }
     setIsSubmitting(true);
     const entryData: Omit<MemoryEntry, 'id'> = {
       content: content.trim(),
@@ -188,19 +203,6 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       toast.error("Connection lost to the archive.");
     } finally {
       setIsSubmitting(false);
-    }
-  };
-  const handleTypeChange = (newType: MemoryType) => {
-    cleanupObjectUrls();
-    setType(newType);
-    setSignatureCaptured(false);
-    setLivePreviewUrl('');
-    setPreviewUrl('');
-    setCurrentFileName('');
-    if (newType !== 'text') {
-      setTimeout(() => urlInputRef.current?.focus(), 100);
-    } else {
-      setMediaUrl('');
     }
   };
   return (
@@ -263,7 +265,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                       ? "bg-peach hover:bg-peach-dark shadow-[0_4px_12px_rgba(255,154,158,0.3)] text-white"
                       : "hover:border-peach/30 bg-white"
                   )}
-                  onClick={() => handleTypeChange(item.id as MemoryType)}
+                  onClick={() => { setType(item.id as MemoryType); setSignatureCaptured(false); }}
                 >
                   <item.icon className="w-4 h-4" />
                   <span className="text-[10px] font-bold tracking-tight">{item.label}</span>
@@ -279,7 +281,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                 </Label>
                 <Input
                   ref={urlInputRef}
-                  placeholder={`Direct URL to high-res ${type}...`}
+                  placeholder={`Direct URL to ${type}...`}
                   className="bg-white rounded-xl border-peach/20 focus:ring-peach/30 h-12 shadow-sm font-sans"
                   value={mediaUrl}
                   onChange={(e) => setMediaUrl(e.target.value)}
@@ -287,7 +289,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                 <div className="flex gap-2 p-3 bg-peach/5 rounded-lg border border-peach/10">
                   <Info className="w-4 h-4 text-peach flex-shrink-0 mt-0.5" />
                   <p className="text-[10px] text-muted-foreground leading-tight">
-                    Cloud storage is restricted. For permanent high-res display, please provide a direct URL from a host (like Imgur, Dropbox, etc).
+                    Cloud storage is restricted. For permanent high-res display, please provide a direct URL from a host.
                   </p>
                 </div>
               </div>
@@ -303,23 +305,21 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                 <div
                   onClick={() => !isProcessing && fileInputRef.current?.click()}
                   className={cn(
-                    "relative border-2 border-dashed rounded-[2rem] p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden",
+                    "relative border-2 border-dashed rounded-[2rem] p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden min-h-[140px]",
                     signatureCaptured ? "border-green-200 bg-green-50/30" : (isProcessing ? "border-peach/30 bg-peach/5" : "hover:bg-peach/5 border-peach/10 bg-white")
                   )}
                 >
                   {(livePreviewUrl || previewUrl) && !isProcessing && (
                     <div className="absolute inset-0 z-0">
-                       {type === 'image' ? (
-                          <img src={livePreviewUrl || previewUrl} className="w-full h-full object-cover opacity-10" alt="Preview" />
-                       ) : (
-                          <div className="w-full h-full opacity-5" style={{ backgroundColor: dominantColor }} />
-                       )}
+                       <img src={previewUrl || livePreviewUrl} className="w-full h-full object-cover opacity-10" alt="Preview" />
                     </div>
                   )}
-                  {signatureCaptured ? (
+                  {isProcessing ? (
+                    <Loader2 className="w-6 h-6 text-peach animate-spin relative z-10" />
+                  ) : signatureCaptured ? (
                     <CheckCircle2 className="w-6 h-6 text-green-500 relative z-10" />
                   ) : (
-                    <Upload className={cn("w-6 h-6 relative z-10", isProcessing ? "text-peach animate-bounce" : "text-peach/40")} />
+                    <Upload className="w-6 h-6 text-peach/40 relative z-10" />
                   )}
                   <div className="text-center relative z-10">
                     <p className="text-xs font-bold text-foreground/80">
