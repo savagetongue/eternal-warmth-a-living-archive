@@ -2,30 +2,124 @@ import { DurableObject } from "cloudflare:workers";
 import type { MemoryEntry, DemoItem } from '../shared/types';
 const INITIAL_MEMORIES: MemoryEntry[] = [
   {
-    id: '1',
-    content: "The day it all began. A moment frozen in time, the start of our eternal archive.",
+    id: 'seed-1',
+    content: "02-09-2023. The day the world changed. A single glance, and I knew every chapter of my life from here on would be written with you.",
     date: '2023-09-02',
     type: 'text'
   },
   {
-    id: '2',
-    content: "Watching the sunset and realizing that every tomorrow belongs to us.",
+    id: 'seed-2',
+    content: "Our first shared coffee. The steam rose in the morning light, mirroring the quiet warmth growing between us.",
     date: '2023-09-15',
+    type: 'image',
+    mediaUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=800',
+    dominantColor: '#F9F3E5',
+    previewUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmqjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/9oAMBAAIRAxEAPwD8/qKKKAP/2Q=='
+  },
+  {
+    id: 'seed-3',
+    content: "The way you laugh when you think no one is watching. It's the most beautiful symphony I've ever heard.",
+    date: '2023-10-10',
+    type: 'audio',
+    mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    dominantColor: '#FECFEF',
+    fileName: 'Your_Laughter_Oct_2023.mp3'
+  },
+  {
+    id: 'seed-4',
+    content: "Autumn leaves in the park. We walked for hours, talking about everything and nothing at all.",
+    date: '2023-11-05',
+    type: 'image',
+    mediaUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=800',
+    dominantColor: '#FF9A9E',
+    previewUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmqjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/9oAMBAAIRAxEAPwD8/qKKKAP/2Q=='
+  },
+  {
+    id: 'seed-5',
+    content: "A quiet moment by the window. The city moves fast, but here, time stands perfectly still for us.",
+    date: '2023-12-20',
+    type: 'video',
+    mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-sunlight-streaming-through-a-window-onto-a-wall-41372-large.mp4',
+    dominantColor: '#A1C4FD',
+    previewUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmqjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/9oAMBAAIRAxEAPwD8/qKKKAP/2Q=='
+  },
+  {
+    id: 'seed-6',
+    content: "The first snow of the year. You caught a snowflake on your glove and showed it to me like it was a diamond.",
+    date: '2024-01-12',
     type: 'text'
   },
   {
-    id: '3',
-    content: "A beautiful memory captured.",
-    date: '2023-10-10',
+    id: 'seed-7',
+    content: "To Sakshi: In every timeline, in every universe, my heart would find its way back to yours.",
+    date: '2024-02-14',
+    type: 'text'
+  },
+  {
+    id: 'seed-8',
+    content: "Spring blossoms. Life is renewing itself all around us, just as our love grows deeper with every passing season.",
+    date: '2024-03-25',
     type: 'image',
-    mediaUrl: 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&q=80&w=800',
-    dominantColor: '#FDFBF7'
+    mediaUrl: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&q=80&w=800',
+    dominantColor: '#FECFEF'
+  },
+  {
+    id: 'seed-9',
+    content: "The song that played on the radio during our long drive. It’s now the soundtrack to my happiest memories.",
+    date: '2024-05-18',
+    type: 'audio',
+    mediaUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+    dominantColor: '#A1C4FD',
+    fileName: 'Roadtrip_Melody.mp3'
+  },
+  {
+    id: 'seed-10',
+    content: "Summer sunsets. The sky was painted in shades of us—bold, warm, and infinitely beautiful.",
+    date: '2024-07-04',
+    type: 'video',
+    mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-clouds-moving-fast-during-a-sunset-173-large.mp4',
+    dominantColor: '#FF9A9E'
+  },
+  {
+    id: 'seed-11',
+    content: "One year of 'Us'. 365 days of learning your favorite things, and falling in love with the way you see the world.",
+    date: '2024-09-02',
+    type: 'text'
+  },
+  {
+    id: 'seed-12',
+    content: "Finding peace in the mountains. The air was cold, but your hand in mine was all the warmth I needed.",
+    date: '2024-11-15',
+    type: 'image',
+    mediaUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800',
+    dominantColor: '#A1C4FD'
+  },
+  {
+    id: 'seed-13',
+    content: "A letter from the heart: You are the anchor in my storm and the light in my morning.",
+    date: '2024-12-31',
+    type: 'text'
+  },
+  {
+    id: 'seed-14',
+    content: "Starting 2025 by your side. Every new year is just another chance to love you more than the last.",
+    date: '2025-01-01',
+    type: 'image',
+    mediaUrl: 'https://images.unsplash.com/photo-1514525253344-f81f3f74412f?auto=format&fit=crop&q=80&w=800',
+    dominantColor: '#FF9A9E'
+  },
+  {
+    id: 'seed-15',
+    content: "The quiet rhythm of a rainy afternoon. Just you, me, and the sound of the world slowing down.",
+    date: '2025-03-10',
+    type: 'video',
+    mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-rain-drops-on-a-window-pane-1522-large.mp4',
+    dominantColor: '#F9F3E5'
   }
 ];
 export class GlobalDurableObject extends DurableObject {
     private async sortMemories(memories: MemoryEntry[]): Promise<MemoryEntry[]> {
       return [...memories].sort((a, b) => {
-        // Handle potentially malformed dates by falling back to epoch
         const parseDate = (d: string) => {
           const parsed = new Date(d).getTime();
           return isNaN(parsed) ? 0 : parsed;
@@ -92,7 +186,6 @@ export class GlobalDurableObject extends DurableObject {
       await this.ctx.storage.put("counter_value", v);
       return v;
     }
-    // signature compatibility
     async getDemoItems(): Promise<DemoItem[]> { return []; }
     async addDemoItem(item: any) { return []; }
     async updateDemoItem(id: string, updates: any) { return []; }
