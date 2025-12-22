@@ -23,32 +23,38 @@ const INITIAL_MEMORIES: MemoryEntry[] = [
   }
 ];
 export class GlobalDurableObject extends DurableObject {
+    private async sortMemories(memories: MemoryEntry[]): Promise<MemoryEntry[]> {
+      return [...memories].sort((a, b) => {
+        // Handle various date formats gracefully for strict chronological ordering
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        return dateA - dateB;
+      });
+    }
     async getMemories(): Promise<MemoryEntry[]> {
       const memories = await this.ctx.storage.get("memories");
       if (memories) {
-        // Migration & Cleaning: Ensure we don't strip the new previewUrl
+        // Clean and maintain metadata integrity
         const cleaned = (memories as any[]).map((m) => {
           const { mood, ...rest } = m;
           if (!rest.date) {
             rest.date = new Date().toISOString().split('T')[0];
           }
           if (rest.type !== 'text' && (!rest.dominantColor || !rest.dominantColor.startsWith('#'))) {
-            rest.dominantColor = '#FDFBF7';
+            // Re-apply signature if missing
+            rest.dominantColor = rest.dominantColor || '#FDFBF7';
           }
-          // Ensure previewUrl is preserved if it exists
           return rest as MemoryEntry;
         });
-        cleaned.sort((a, b) => a.date.localeCompare(b.date));
-        return cleaned;
+        return await this.sortMemories(cleaned);
       }
-      const initial = [...INITIAL_MEMORIES].sort((a, b) => a.date.localeCompare(b.date));
+      const initial = await this.sortMemories([...INITIAL_MEMORIES]);
       await this.ctx.storage.put("memories", initial);
       return initial;
     }
     async addMemory(entry: MemoryEntry): Promise<MemoryEntry[]> {
       const memories = await this.getMemories();
-      const updated = [...memories, entry];
-      updated.sort((a, b) => a.date.localeCompare(b.date));
+      const updated = await this.sortMemories([...memories, entry]);
       await this.ctx.storage.put("memories", updated);
       return updated;
     }
@@ -57,8 +63,9 @@ export class GlobalDurableObject extends DurableObject {
       const index = memories.findIndex(m => m.id === id);
       if (index !== -1) {
         memories[index] = { ...memories[index], ...updates };
-        memories.sort((a, b) => a.date.localeCompare(b.date));
-        await this.ctx.storage.put("memories", memories);
+        const updated = await this.sortMemories(memories);
+        await this.ctx.storage.put("memories", updated);
+        return updated;
       }
       return memories;
     }
