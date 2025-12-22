@@ -13,7 +13,8 @@ interface MemoryCardProps {
   onDelete?: () => void;
 }
 export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory, index, onEdit, onDelete }, ref) => {
-  const [isMediaLoading, setIsMediaLoading] = useState(true);
+  const hasMediaSource = !!(memory.mediaUrl || (memory.type === 'image' && !!memory.previewUrl));
+  const [isMediaLoading, setIsMediaLoading] = useState(hasMediaSource);
   const [hasError, setHasError] = useState(false);
   const imageSrc = useMemo(() => {
     return memory.mediaUrl || memory.previewUrl;
@@ -109,19 +110,17 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
             className="relative overflow-hidden rounded-[2rem] aspect-[4/3] md:aspect-[16/10] h-auto min-h-[300px] shadow-inner border-4 border-warm-paper bg-muted/20"
             style={{ backgroundColor: hasError ? 'transparent' : fallbackColor }}
           >
-            <AnimatePresence>
-              {isMediaLoading && !hasError && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10"
-                >
-                  <MediaIcon className="w-12 h-12 text-foreground/10 animate-pulse mb-4" />
-                  <Loader2 className="absolute bottom-6 w-5 h-5 text-foreground/5 animate-spin" />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {isMediaLoading && !hasError && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10"
+              >
+                <MediaIcon className="w-12 h-12 text-foreground/10 animate-pulse mb-4" />
+                <Loader2 className="absolute bottom-6 w-5 h-5 text-foreground/5 animate-spin" />
+              </motion.div>
+            )}
             {hasError ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-zinc-50 dark:bg-zinc-900">
                 <Link2Off className="w-12 h-12 text-red-300 mb-4" />
@@ -134,45 +133,46 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                   />
                 )}
               </div>
-            ) : (
-              memory.type === 'image' ? (
-                imageSrc ? (
-                  <img
-                    src={imageSrc}
-                    alt={`A cherished visual memory from ${formattedDate}`}
-                    className={cn(
-                      "w-full h-full object-contain transition-all duration-700",
-                      isMediaLoading ? "scale-105 blur-sm opacity-50" : "scale-100 blur-0 opacity-100"
-                    )}
-                    onLoad={() => setIsMediaLoading(false)}
-                    onError={() => { setIsMediaLoading(false); setHasError(true); }}
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                    <ImageIcon className="w-16 h-16 text-foreground/10 mb-4" />
-                    <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/20 font-bold">No visual source provided</span>
-                  </div>
-                )
-              ) : (
-                <video
-                  src={videoSrc}
-                  poster={memory.previewUrl}
+            ) : memory.type === 'image' ? (
+              imageSrc ? (
+                <img
+                  src={imageSrc}
+                  alt={`A cherished visual memory from ${formattedDate}`}
                   className={cn(
-                    "w-full h-full object-contain transition-opacity duration-1000",
-                    isMediaLoading && !memory.previewUrl ? "opacity-0" : "opacity-100"
+                    "w-full h-full object-contain transition-all duration-700",
+                    isMediaLoading ? "scale-105 blur-sm opacity-50" : "scale-100 blur-0 opacity-100"
                   )}
-                  controls
-                  onLoadedData={() => setIsMediaLoading(false)}
-                  onCanPlayThrough={() => setIsMediaLoading(false)}
-                  onError={() => {
-                    if (!videoSrc) {
-                      setHasError(true);
-                    }
-                    setIsMediaLoading(false);
-                  }}
+                  onLoad={() => setIsMediaLoading(false)}
+                  onError={() => { setIsMediaLoading(false); setHasError(true); }}
+                  loading="lazy"
                 />
+              ) : (
+                <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                  <ImageIcon className="w-16 h-16 text-foreground/10 mb-4" />
+                  <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/20 font-bold">Missing visual data</span>
+                </div>
               )
+            ) : memory.mediaUrl ? (
+              <video
+                src={videoSrc}
+                poster={memory.previewUrl}
+                className={cn(
+                  "w-full h-full object-contain transition-opacity duration-1000",
+                  isMediaLoading && !memory.previewUrl ? "opacity-0" : "opacity-100"
+                )}
+                controls
+                onLoadedData={() => setIsMediaLoading(false)}
+                onCanPlayThrough={() => setIsMediaLoading(false)}
+                onError={() => {
+                  setIsMediaLoading(false);
+                  setHasError(true);
+                }}
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center p-12" style={{backgroundColor: fallbackColor}}>
+                <Video className="w-20 h-20 opacity-50 text-current mb-4" />
+                <span className="text-sm uppercase tracking-widest text-current/60 font-bold">Video Preview</span>
+              </div>
             )}
             {!memory.mediaUrl && memory.previewUrl && !hasError && (
               <div className="absolute bottom-4 right-4 z-20">

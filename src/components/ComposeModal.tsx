@@ -53,11 +53,12 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   };
   const generateHighResThumbnail = (img: HTMLImageElement): string => {
     const canvas = document.createElement('canvas');
+    const maxDim = 1024;
     const originalWidth = img.naturalWidth || img.width;
     const originalHeight = img.naturalHeight || img.height;
-    const targetWidth = Math.min(600, originalWidth);
-    const scaleFactor = targetWidth / originalWidth;
-    const targetHeight = Math.floor(originalHeight * scaleFactor);
+    const scale = Math.min(1, maxDim / Math.max(originalWidth, originalHeight));
+    const targetWidth = Math.floor(originalWidth * scale);
+    const targetHeight = Math.floor(originalHeight * scale);
     canvas.width = targetWidth;
     canvas.height = targetHeight;
     const ctx = canvas.getContext('2d');
@@ -65,7 +66,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-    return canvas.toDataURL('image/jpeg', 0.6); // Reduced quality for storage safety
+    return canvas.toDataURL('image/jpeg', 0.92); // High-quality thumbnail ~1024px max dim, JPEG 92% for clarity within limits
   };
   const cleanupObjectUrls = useCallback(() => {
     objectUrlsRef.current.forEach((url) => {
