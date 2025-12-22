@@ -1,7 +1,7 @@
 import React, { forwardRef, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { format, parseISO } from 'date-fns';
-import { Quote, Pencil, Trash2, Music, CassetteTape, Loader2 } from 'lucide-react';
+import { format, parseISO, isValid } from 'date-fns';
+import { Quote, Pencil, Trash2, Music, Cassette, Loader2 } from 'lucide-react';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,9 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
   };
   const formattedDate = useMemo(() => {
     try {
-      return format(parseISO(memory.date), 'MMMM do, yyyy');
+      const date = parseISO(memory.date);
+      if (!isValid(date)) return "A special day";
+      return format(date, 'MMMM do, yyyy');
     } catch (e) {
       return "A special day";
     }
@@ -54,7 +56,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       }}
       viewport={{ once: true, margin: "-50px" }}
       className={cn(
-        "group relative bg-white dark:bg-zinc-950 rounded-[2.5rem] p-8 sm:p-12 border border-peach/10 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden",
+        "group relative bg-white dark:bg-zinc-950 rounded-[2.5rem] p-6 sm:p-12 border border-peach/10 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden",
         "before:absolute before:inset-0 before:bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')] before:opacity-[0.05] before:pointer-events-none"
       )}
     >
@@ -81,7 +83,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       </div>
       <div className="mb-8 flex items-center gap-3">
         <div className="h-px flex-1 bg-peach/10" />
-        <span className="text-xs font-serif italic text-muted-foreground tracking-widest uppercase">
+        <span className="text-[10px] sm:text-xs font-serif italic text-muted-foreground tracking-widest uppercase">
           {formattedDate}
         </span>
         <div className="h-px flex-1 bg-peach/10" />
@@ -105,7 +107,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
               loading="lazy"
             />
           </div>
-          <p className="text-2xl md:text-3xl font-serif leading-relaxed text-foreground/90 italic text-center px-4">
+          <p className="text-xl md:text-3xl font-serif leading-relaxed text-foreground/90 italic text-center px-4">
             "{memory.content}"
           </p>
         </div>
@@ -126,7 +128,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
               onLoadedData={() => setIsMediaLoading(false)}
             />
           </div>
-          <p className="text-2xl font-serif leading-relaxed text-foreground/90 italic text-center px-4">
+          <p className="text-xl md:text-2xl font-serif leading-relaxed text-foreground/90 italic text-center px-4">
             {memory.content}
           </p>
         </div>
@@ -135,19 +137,19 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
         <div className="space-y-10">
           <div className="relative text-center px-8">
             <Quote className="absolute -top-4 -left-2 w-16 h-16 text-peach/5 -rotate-12" />
-            <p className="text-2xl md:text-4xl font-serif leading-relaxed text-foreground text-pretty">
+            <p className="text-xl md:text-4xl font-serif leading-relaxed text-foreground text-pretty">
               {memory.content}
             </p>
           </div>
-          <div className="bg-warm-cream/20 p-8 rounded-[2.5rem] border border-peach/10 flex flex-col items-center gap-6 relative overflow-hidden">
+          <div className="bg-peach/5 p-8 rounded-[2.5rem] border border-peach/10 flex flex-col items-center gap-6 relative overflow-hidden">
             <div className="absolute top-2 right-4 opacity-10">
-              <CassetteTape className="w-20 h-20" />
+              <Cassette className="w-20 h-20" />
             </div>
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-peach/10 text-peach animate-pulse">
                 <Music className="w-6 h-6" />
               </div>
-              <span className="text-xs font-bold uppercase tracking-[0.3em] text-peach/60">Audio Keepsake</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-peach/60">Audio Keepsake</span>
             </div>
             <audio
               src={memory.mediaUrl}
@@ -158,12 +160,12 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
         </div>
       )}
       {memory.type === 'text' && (
-        <div className="relative py-12 px-6">
-          <Quote className="absolute -top-6 -left-4 w-24 h-24 text-peach/5 -rotate-6" />
-          <p className="text-2xl md:text-4xl font-serif leading-relaxed text-foreground text-pretty text-center selection:bg-peach/20">
+        <div className="relative py-8 md:py-12 px-4 md:px-6">
+          <Quote className="absolute -top-6 -left-4 w-16 md:w-24 h-16 md:h-24 text-peach/5 -rotate-6" />
+          <p className="text-xl md:text-4xl font-serif leading-relaxed text-foreground text-pretty text-center selection:bg-peach/20">
             {memory.content}
           </p>
-          <Quote className="absolute -bottom-6 -right-4 w-24 h-24 text-peach/5 rotate-[174deg]" />
+          <Quote className="absolute -bottom-6 -right-4 w-16 md:w-24 h-16 md:h-24 text-peach/5 rotate-[174deg]" />
         </div>
       )}
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-peach/20 to-transparent blur-sm" />
