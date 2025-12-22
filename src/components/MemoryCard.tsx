@@ -1,7 +1,7 @@
-import React, { forwardRef, useMemo } from 'react';
+import React, { forwardRef, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
-import { Quote, Pencil, Trash2, Music, CassetteTape } from 'lucide-react';
+import { Quote, Pencil, Trash2, Music, CassetteTape, Loader2 } from 'lucide-react';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -13,13 +13,12 @@ interface MemoryCardProps {
   onDelete?: () => void;
 }
 export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory, index, onEdit, onDelete }, ref) => {
+  const [isMediaLoading, setIsMediaLoading] = useState(true);
   const isImage = memory.type === 'image' && memory.mediaUrl;
   const isVideo = memory.type === 'video' && memory.mediaUrl;
   const isAudio = memory.type === 'audio' && memory.mediaUrl;
-  // Organic subtle tilt
   const rotation = useMemo(() => (Math.random() * 2 - 1).toFixed(2), []);
   const handleDelete = async () => {
-    // Custom styled confirmation would be better but keeping it simple for now
     if (!window.confirm("Remove this memory from our eternal archive?")) return;
     try {
       const res = await fetch(`/api/memories/${memory.id}`, {
@@ -35,16 +34,23 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       toast.error("An error occurred during deletion.");
     }
   };
+  const formattedDate = useMemo(() => {
+    try {
+      return format(parseISO(memory.date), 'MMMM do, yyyy');
+    } catch (e) {
+      return "A special day";
+    }
+  }, [memory.date]);
   return (
     <motion.div
       ref={ref}
       layout
       initial={{ opacity: 0, y: 40, rotate: parseFloat(rotation) }}
       whileInView={{ opacity: 1, y: 0 }}
-      whileHover={{ 
-        y: -8, 
+      whileHover={{
+        y: -8,
         rotate: 0,
-        transition: { duration: 0.4, ease: "easeOut" } 
+        transition: { duration: 0.4, ease: "easeOut" }
       }}
       viewport={{ once: true, margin: "-50px" }}
       className={cn(
@@ -52,7 +58,6 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
         "before:absolute before:inset-0 before:bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')] before:opacity-[0.05] before:pointer-events-none"
       )}
     >
-      {/* Decorative Corner */}
       <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-peach/5 to-transparent pointer-events-none" />
       <div className="absolute top-6 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 flex gap-2 translate-y-2 group-hover:translate-y-0 z-20">
         <Button
@@ -60,6 +65,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
           size="icon"
           className="h-10 w-10 rounded-full bg-warm-cream/80 backdrop-blur-sm border border-peach/20 hover:bg-peach/20 text-peach"
           onClick={() => onEdit?.(memory)}
+          title="Edit memory"
         >
           <Pencil className="w-4 h-4" />
         </Button>
@@ -68,6 +74,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
           size="icon"
           className="h-10 w-10 rounded-full bg-red-50/80 backdrop-blur-sm border border-red-100 hover:bg-red-100 text-red-400"
           onClick={handleDelete}
+          title="Delete memory"
         >
           <Trash2 className="w-4 h-4" />
         </Button>
@@ -75,17 +82,26 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       <div className="mb-8 flex items-center gap-3">
         <div className="h-px flex-1 bg-peach/10" />
         <span className="text-xs font-serif italic text-muted-foreground tracking-widest uppercase">
-          {format(parseISO(memory.date), 'MMMM do, yyyy')}
+          {formattedDate}
         </span>
         <div className="h-px flex-1 bg-peach/10" />
       </div>
       {isImage && (
         <div className="space-y-8">
-          <div className="overflow-hidden rounded-[2rem] aspect-[16/10] shadow-inner border-4 border-warm-paper">
+          <div className="relative overflow-hidden rounded-[2rem] aspect-[16/10] shadow-inner border-4 border-warm-paper bg-warm-cream/10">
+            {isMediaLoading && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-peach/30 animate-spin" />
+              </div>
+            )}
             <img
               src={memory.mediaUrl}
-              alt="Memory"
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+              alt={`A cherished moment from ${formattedDate}`}
+              className={cn(
+                "w-full h-full object-cover transition-all duration-1000 group-hover:scale-110",
+                isMediaLoading ? "opacity-0" : "opacity-100"
+              )}
+              onLoad={() => setIsMediaLoading(false)}
               loading="lazy"
             />
           </div>
@@ -96,11 +112,18 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       )}
       {isVideo && (
         <div className="space-y-8">
-          <div className="overflow-hidden rounded-[2rem] aspect-video bg-black shadow-2xl border-4 border-warm-paper">
+          <div className="overflow-hidden rounded-[2rem] aspect-video bg-black shadow-2xl border-4 border-warm-paper relative">
+             {isMediaLoading && (
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <Loader2 className="w-8 h-8 text-peach/30 animate-spin" />
+              </div>
+            )}
             <video
               src={memory.mediaUrl}
               controls
+              title={`Video memory from ${formattedDate}`}
               className="w-full h-full object-contain"
+              onLoadedData={() => setIsMediaLoading(false)}
             />
           </div>
           <p className="text-2xl font-serif leading-relaxed text-foreground/90 italic text-center px-4">
@@ -143,7 +166,6 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
           <Quote className="absolute -bottom-6 -right-4 w-24 h-24 text-peach/5 rotate-[174deg]" />
         </div>
       )}
-      {/* Subtle Texture Shadow */}
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-peach/20 to-transparent blur-sm" />
     </motion.div>
   );
