@@ -26,6 +26,7 @@ export class GlobalDurableObject extends DurableObject {
     async getMemories(): Promise<MemoryEntry[]> {
       const memories = await this.ctx.storage.get("memories");
       if (memories) {
+        // Migration & Cleaning: Ensure we don't strip the new previewUrl
         const cleaned = (memories as any[]).map((m) => {
           const { mood, ...rest } = m;
           if (!rest.date) {
@@ -34,10 +35,11 @@ export class GlobalDurableObject extends DurableObject {
           if (rest.type !== 'text' && (!rest.dominantColor || !rest.dominantColor.startsWith('#'))) {
             rest.dominantColor = '#FDFBF7';
           }
-          return rest;
+          // Ensure previewUrl is preserved if it exists
+          return rest as MemoryEntry;
         });
         cleaned.sort((a, b) => a.date.localeCompare(b.date));
-        return cleaned as MemoryEntry[];
+        return cleaned;
       }
       const initial = [...INITIAL_MEMORIES].sort((a, b) => a.date.localeCompare(b.date));
       await this.ctx.storage.put("memories", initial);
@@ -75,6 +77,7 @@ export class GlobalDurableObject extends DurableObject {
       await this.ctx.storage.put("counter_value", v);
       return v;
     }
+    // Unused template methods kept for signature compatibility
     async getDemoItems(): Promise<DemoItem[]> { return []; }
     async addDemoItem(item: any) { return []; }
     async updateDemoItem(id: string, updates: any) { return []; }

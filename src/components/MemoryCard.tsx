@@ -1,7 +1,7 @@
 import React, { forwardRef, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO, isValid } from 'date-fns';
-import { Quote, Pencil, Trash2, Music, Disc3, Loader2, ImageIcon, Video } from 'lucide-react';
+import { Quote, Pencil, Trash2, Music, Disc3, Loader2, ImageIcon, Video, AlertCircle } from 'lucide-react';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -14,14 +14,9 @@ interface MemoryCardProps {
 }
 export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory, index, onEdit, onDelete }, ref) => {
   const [isMediaLoading, setIsMediaLoading] = useState(true);
-  
-  React.useEffect(() => {
-    if (!memory.mediaUrl) {
-      setIsMediaLoading(false);
-    }
-  }, [memory.mediaUrl]);
-  const displayUrl = memory.mediaUrl;
-  const isAudio = memory.type === 'audio' && displayUrl;
+  const [hasError, setHasError] = useState(false);
+  // Priority: Remote Media -> Local High-Res Preview -> Nothing
+  const mediaSrc = memory.mediaUrl || memory.previewUrl;
   const hashId = useMemo(() => {
     return memory.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   }, [memory.id]);
@@ -33,6 +28,15 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
     if (memory.dominantColor) return memory.dominantColor;
     return `hsl(${(hashId % 360)}, 30%, 95%)`;
   }, [hashId, memory.dominantColor]);
+  const formattedDate = useMemo(() => {
+    try {
+      const date = parseISO(memory.date);
+      if (!isValid(date)) return "A special day";
+      return format(date, 'MMMM do, yyyy');
+    } catch (e) {
+      return "A special day";
+    }
+  }, [memory.date]);
   const handleDelete = async () => {
     if (!window.confirm("Remove this memory from our eternal archive?")) return;
     try {
@@ -49,15 +53,6 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       toast.error("An error occurred during deletion.");
     }
   };
-  const formattedDate = useMemo(() => {
-    try {
-      const date = parseISO(memory.date);
-      if (!isValid(date)) return "A special day";
-      return format(date, 'MMMM do, yyyy');
-    } catch (e) {
-      return "A special day";
-    }
-  }, [memory.date]);
   const MediaIcon = memory.type === 'video' ? Video : memory.type === 'audio' ? Music : ImageIcon;
   return (
     <motion.div
@@ -77,6 +72,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       )}
     >
       <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-peach/5 to-transparent pointer-events-none" />
+      {/* Actions */}
       <div className="absolute top-6 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 flex gap-2 translate-y-2 group-hover:translate-y-0 z-20">
         <Button
           variant="ghost"
@@ -107,60 +103,56 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       {(memory.type === 'image' || memory.type === 'video') && (
         <div className="space-y-8">
           <div
-            className="relative overflow-hidden rounded-[2rem] aspect-[16/10] shadow-inner border-4 border-warm-paper"
-            style={{ backgroundColor: fallbackColor }}
+            className="relative overflow-hidden rounded-[2rem] aspect-[4/3] md:aspect-[16/10] h-auto min-h-[300px] shadow-inner border-4 border-warm-paper bg-muted/20"
+            style={{ backgroundColor: hasError ? 'transparent' : fallbackColor }}
           >
-            {memory.mediaUrl ? (
-              <>
-                <AnimatePresence>
-                  {isMediaLoading && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10"
-                    >
-                      <MediaIcon className="w-12 h-12 text-foreground/10 animate-pulse mb-4" />
-                      {memory.fileName && (
-                        <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/20 font-bold truncate max-w-full">
-                          {memory.fileName}
-                        </span>
-                      )}
-                      <Loader2 className="absolute bottom-6 w-5 h-5 text-foreground/5 animate-spin" />
-                    </motion.div>
+            <AnimatePresence>
+              {isMediaLoading && !hasError && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10"
+                >
+                  <MediaIcon className="w-12 h-12 text-foreground/10 animate-pulse mb-4" />
+                  <Loader2 className="absolute bottom-6 w-5 h-5 text-foreground/5 animate-spin" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+            {hasError ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                <AlertCircle className="w-12 h-12 text-red-300 mb-4" />
+                <span className="text-[10px] uppercase tracking-[0.3em] text-red-300 font-bold">Failed to load from archive</span>
+              </div>
+            ) : mediaSrc ? (
+              memory.type === 'image' ? (
+                <img
+                  src={mediaSrc}
+                  alt={`Cherished moment from ${formattedDate}`}
+                  className={cn(
+                    "w-full h-full object-contain transition-all duration-700",
+                    isMediaLoading ? "scale-105 blur-sm opacity-50" : "scale-100 blur-0 opacity-100"
                   )}
-                </AnimatePresence>
-                {memory.type === 'image' ? (
-                  <img
-                    src={memory.mediaUrl}
-                    alt={`Cherished moment from ${formattedDate}`}
-                    className={cn(
-                      "w-full h-full object-cover transition-opacity duration-1000 group-hover:scale-110",
-                      isMediaLoading ? "opacity-0" : "opacity-100"
-                    )}
-                    onLoad={() => setIsMediaLoading(false)}
-                    loading="lazy"
-                  />
-                ) : (
-                  <video
-                    src={memory.mediaUrl}
-                    className={cn(
-                      "w-full h-full object-contain transition-opacity duration-1000",
-                      isMediaLoading ? "opacity-0" : "opacity-100"
-                    )}
-                    controls
-                    onCanPlayThrough={() => setIsMediaLoading(false)}
-                  />
-                )}
-              </>
+                  onLoad={() => setIsMediaLoading(false)}
+                  onError={() => { setIsMediaLoading(false); setHasError(true); }}
+                  loading="lazy"
+                />
+              ) : (
+                <video
+                  src={mediaSrc}
+                  className={cn(
+                    "w-full h-full object-contain transition-opacity duration-1000",
+                    isMediaLoading ? "opacity-0" : "opacity-100"
+                  )}
+                  controls
+                  onCanPlayThrough={() => setIsMediaLoading(false)}
+                  onError={() => { setIsMediaLoading(false); setHasError(true); }}
+                />
+              )
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10">
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
                 <MediaIcon className="w-16 h-16 text-foreground/10 mb-4" />
-                {memory.fileName && (
-                  <span className="text-sm uppercase tracking-[0.3em] text-foreground/20 font-bold truncate max-w-full">
-                    {memory.fileName}
-                  </span>
-                )}
+                <span className="text-[10px] uppercase tracking-[0.3em] text-foreground/20 font-bold">Missing visual data</span>
               </div>
             )}
           </div>
@@ -178,9 +170,9 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
             </p>
           </div>
           <div className="relative p-8 rounded-[2.5rem] border border-peach/10 overflow-hidden flex flex-col items-center gap-6">
-            <div 
-              className="absolute inset-0 opacity-20" 
-              style={{ backgroundColor: fallbackColor }} 
+            <div
+              className="absolute inset-0 opacity-20"
+              style={{ backgroundColor: fallbackColor }}
             />
             <div className="absolute top-2 right-4 opacity-10">
               <Disc3 className="w-20 h-20 animate-[spin_8s_linear_infinite]" />
@@ -205,7 +197,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
             ) : (
               <div className="w-full h-12 flex items-center justify-center bg-peach/5 border-2 border-dashed border-peach/20 rounded-xl relative z-10">
                 <Music className="w-6 h-6 text-peach/30 mr-2" />
-                <span className="text-sm text-muted-foreground/60 font-medium">Ready for playback</span>
+                <span className="text-sm text-muted-foreground/60 font-medium">Archived Audio</span>
               </div>
             )}
           </div>
