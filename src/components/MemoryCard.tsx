@@ -87,18 +87,12 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                 </motion.div>
               )}
             </AnimatePresence>
-            {/* Video Fallback State - Premium Illustrative UI */}
-            {memory.type === 'video' && (hasError || !memory.mediaUrl) ? (
-              <div className="absolute inset-0 flex items-center justify-center p-8 bg-inherit">
-                <Video className="w-24 h-24 text-white/30" />
-                <span className="absolute bottom-4 right-4 bg-white/20 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white/80">
-                  Preview
-                </span>
-              </div>
-            ) : memory.type === 'image' && (hasError || !memory.mediaUrl) ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-zinc-50 dark:bg-zinc-900">
-                <ImageIcon className="w-12 h-12 text-peach/20 mb-4" />
-                <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground/40 font-bold">Unreachable source</span>
+            {(!memory.mediaUrl || hasError) ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-inherit">
+                <MediaIcon className="w-24 h-24 text-white/40 mb-4" />
+                <div className="absolute bottom-6 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[9px] font-black uppercase tracking-[0.4em] text-white/90">
+                  Archived Essence {memory.fileName ? `• ${memory.fileName}` : ''}
+                </div>
               </div>
             ) : memory.type === 'image' ? (
               <img
@@ -146,11 +140,12 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                 src={memory.mediaUrl}
                 controls
                 className="w-full relative z-10 opacity-80"
+                onCanPlay={() => setIsMediaLoading(false)}
                 onError={() => setHasError(true)}
               />
             ) : (
-              <div className="w-full h-12 flex items-center justify-center bg-white/40 border-2 border-dashed border-peach/20 rounded-xl relative z-10">
-                <span className="text-sm text-muted-foreground/60">{hasError ? "Corrupted Audio Stream" : "Archived Signature"}</span>
+              <div className="w-full h-16 flex items-center justify-center bg-white/40 border-2 border-dashed border-peach/20 rounded-2xl relative z-10">
+                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-peach/40">Essence Recorded</span>
               </div>
             )}
           </div>

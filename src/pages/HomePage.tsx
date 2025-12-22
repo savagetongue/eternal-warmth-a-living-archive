@@ -5,7 +5,7 @@ import { MemoryCard } from '@/components/MemoryCard';
 import { ComposeModal } from '@/components/ComposeModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Toaster } from '@/components/ui/sonner';
-import { Sparkles, Heart, Plus, Feather, ChevronDown, BookOpen } from 'lucide-react';
+import { Sparkles, Heart, Plus, Feather, ChevronDown, BookOpen, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
@@ -111,9 +111,16 @@ export function HomePage() {
             <div className="flex flex-col space-y-48 md:space-y-64 items-center">
               <AnimatePresence mode="popLayout">
                 {isLoading ? (
-                  [...Array(3)].map((_, i) => (
-                    <div key={i} className="w-full max-w-2xl h-96 bg-white/10 animate-pulse rounded-[3.5rem] border border-peach/5" />
-                  ))
+                  <motion.div
+                    key="loader"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="w-full flex flex-col items-center justify-center py-64 space-y-6"
+                  >
+                    <Loader2 className="w-12 h-12 text-peach animate-spin" />
+                    <p className="font-serif text-2xl italic text-muted-foreground/60">Seeding eternal memories...</p>
+                  </motion.div>
                 ) : memories.length > 0 ? (
                   memories.map((memory, index) => (
                     <motion.div
@@ -139,6 +146,7 @@ export function HomePage() {
                   ))
                 ) : (
                   <motion.div
+                    key="empty"
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className="w-full max-w-4xl text-center py-64 bg-white/30 backdrop-blur-md rounded-[5rem] border-2 border-dashed border-peach/20 flex flex-col items-center justify-center space-y-12"
@@ -148,7 +156,7 @@ export function HomePage() {
                     </div>
                     <div className="space-y-6">
                       <p className="font-serif text-4xl italic text-muted-foreground/80">Our first page is waiting...</p>
-                      <p className="text-xs text-muted-foreground/40 tracking-[0.5em] uppercase font-black px-12">Capture a moment with a letter, a photograph, or a shared melody</p>
+                      <p className="text-xs text-muted-foreground/40 tracking-[0.5em] uppercase font-black px-12 text-balance">Capture a moment with a letter, a photograph, or a shared melody</p>
                     </div>
                     <Button
                       variant="default"

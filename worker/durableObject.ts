@@ -71,7 +71,7 @@ const INITIAL_MEMORIES: MemoryEntry[] = [
   },
   {
     id: 'seed-10',
-    content: "Summer sunsets. The sky was painted in shades of us—bold, warm, and infinitely beautiful.",
+    content: "Summer sunsets. The sky was painted in shades of us��bold, warm, and infinitely beautiful.",
     date: '2024-07-04',
     type: 'video',
     mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-clouds-moving-fast-during-a-sunset-173-large.mp4',
@@ -112,6 +112,36 @@ const INITIAL_MEMORIES: MemoryEntry[] = [
     type: 'video',
     mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-rain-drops-on-a-window-pane-1522-large.mp4',
     dominantColor: '#F9F3E5'
+  },
+  {
+    id: 'seed-16',
+    content: "Shared dreams of a small cottage with a blue door. It's not just a house; it's the future I see with you.",
+    date: '2025-04-05',
+    type: 'text'
+  },
+  {
+    id: 'seed-17',
+    content: "The tiny kindnesses you show every day—the extra sugar in my tea, the way you adjust my scarf. These are the true monuments of our love.",
+    date: '2025-05-12',
+    type: 'text'
+  },
+  {
+    id: 'seed-18',
+    content: "Promises made under the midnight sky. Some spoken, some felt in the silence between our heartbeats.",
+    date: '2025-06-20',
+    type: 'text'
+  },
+  {
+    id: 'seed-19',
+    content: "Learning to bridge our differences. Every compromise is a bridge built towards a stronger 'Us'.",
+    date: '2025-07-08',
+    type: 'text'
+  },
+  {
+    id: 'seed-20',
+    content: "To many more years of this beautiful unfolding. You are my favorite story, and I can't wait to read the next chapter.",
+    date: '2025-08-30',
+    type: 'text'
   }
 ];
 export class GlobalDurableObject extends DurableObject {
