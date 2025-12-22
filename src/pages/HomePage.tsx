@@ -39,21 +39,22 @@ export function HomePage() {
     setIsModalOpen(true);
   };
   const { scrollYProgress } = useScroll();
-  const y1 = useTransform(scrollYProgress, [0, 1], [0, -150]);
-  const y2 = useTransform(scrollYProgress, [0, 1], [0, -400]);
+  const y1 = useTransform(scrollYProgress, [0, 1], [0, -300]);
+  const y2 = useTransform(scrollYProgress, [0, 1], [0, -600]);
+  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
   return (
     <div className="min-h-screen bg-transparent relative selection:bg-peach/30 overflow-x-hidden">
-      <ThemeToggle className="fixed top-6 right-6 lg:right-10" />
+      <ThemeToggle className="fixed top-6 right-6 lg:right-10 z-50" />
       <Toaster richColors position="bottom-right" closeButton />
       {/* Dynamic Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <motion.div
           style={{ y: y1 }}
-          className="absolute top-[5%] left-[-15%] w-[60vw] h-[60vw] bg-peach/10 rounded-full blur-[130px] animate-breathe"
+          className="absolute top-[-10%] left-[-20%] w-[80vw] h-[80vw] bg-peach/10 rounded-full blur-[150px] animate-breathe"
         />
         <motion.div
           style={{ y: y2 }}
-          className="absolute top-[40%] right-[-20%] w-[70vw] h-[70vw] bg-mist/10 rounded-full blur-[160px] animate-breathe"
+          className="absolute top-[30%] right-[-25%] w-[90vw] h-[90vw] bg-mist/10 rounded-full blur-[180px] animate-breathe"
           transition={{ delay: 1 }}
         />
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')] opacity-[0.03] mix-blend-multiply pointer-events-none" />
@@ -81,12 +82,13 @@ export function HomePage() {
               "A sanctuary where our story unfolds page by page, growing into an eternal tapestry of shared light."
             </p>
             <TimeKeeper />
-            <motion.div 
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
+            <motion.div
+              style={{ opacity }}
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
               className="pt-12 text-peach/40 flex flex-col items-center gap-2"
             >
-              <span className="text-[10px] uppercase tracking-[0.5em] font-black">Read our journey</span>
+              <span className="text-[10px] uppercase tracking-[0.5em] font-black select-none">Scroll to Read</span>
               <ChevronDown className="w-5 h-5" />
             </motion.div>
           </motion.div>
@@ -100,7 +102,7 @@ export function HomePage() {
                 </h2>
                 <p className="text-lg text-muted-foreground italic font-serif opacity-70">A chronological archive of our love</p>
               </div>
-              <div className="px-6 py-2.5 rounded-full bg-white/40 text-[11px] uppercase tracking-[0.4em] text-muted-foreground font-black border border-peach/10 shadow-sm backdrop-blur-sm">
+              <div className="px-6 py-2.5 rounded-full bg-white/40 text-[11px] uppercase tracking-[0.4em] text-muted-foreground font-black border border-peach/10 shadow-sm backdrop-blur-sm select-none">
                 Journeying through {memories.length} Moments
               </div>
             </div>
@@ -142,13 +144,13 @@ export function HomePage() {
                     <div className="p-8 rounded-full bg-peach/5 border border-peach/10 animate-float">
                       <Feather className="w-16 h-16 text-peach/20" />
                     </div>
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <p className="font-serif text-4xl italic text-muted-foreground/80">Our story begins here...</p>
                       <p className="text-xs text-muted-foreground/40 tracking-[0.5em] uppercase font-black">Begin the chronicle of forever</p>
                     </div>
                     <Button
-                      variant="outline"
-                      className="rounded-full px-16 py-10 border-peach/30 text-peach hover:bg-peach hover:text-white transition-all duration-700 font-serif text-2xl shadow-xl hover:shadow-peach/20"
+                      variant="default"
+                      className="rounded-full px-16 py-10 bg-peach text-white hover:bg-peach-dark transition-all duration-700 font-serif text-2xl shadow-xl hover:shadow-peach/30"
                       onClick={handleNew}
                     >
                       Archive First Memory
@@ -166,10 +168,10 @@ export function HomePage() {
              <Heart className="w-4 h-4 fill-peach animate-pulse" style={{ animationDelay: '0.4s' }} />
           </div>
           <div className="space-y-4">
-            <p className="text-3xl text-muted-foreground/50 font-serif italic">
+            <p className="text-3xl text-muted-foreground/50 font-serif italic select-none">
               Each moment a thread, each thread a forever.
             </p>
-            <p className="text-[11px] uppercase tracking-[0.6em] text-peach/30 font-black">Eternal Warmth: A Living Archive</p>
+            <p className="text-[11px] uppercase tracking-[0.6em] text-peach/30 font-black select-none">Eternal Warmth: A Living Archive</p>
           </div>
         </footer>
       </div>
