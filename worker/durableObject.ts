@@ -25,8 +25,15 @@ export class GlobalDurableObject extends DurableObject {
     async getMemories(): Promise<MemoryEntry[]> {
       const memories = await this.ctx.storage.get("memories");
       if (memories) {
-        // Cleanup step: Ensure no legacy 'mood' properties exist in the returned data
-        const cleaned = (memories as any[]).map(({ mood, ...rest }) => rest);
+        // Cleanup step: Ensure all memories have a valid date property
+        const cleaned = (memories as any[]).map((m) => {
+          const { mood, ...rest } = m;
+          // Fallback for any legacy entries missing date
+          if (!rest.date) {
+            rest.date = new Date().toISOString().split('T')[0];
+          }
+          return rest;
+        });
         return cleaned as MemoryEntry[];
       }
       await this.ctx.storage.put("memories", INITIAL_MEMORIES);
@@ -34,7 +41,10 @@ export class GlobalDurableObject extends DurableObject {
     }
     async addMemory(entry: MemoryEntry): Promise<MemoryEntry[]> {
       const memories = await this.getMemories();
+      // Directly use the entry passed from frontend which now includes user-defined date
       const updated = [entry, ...memories];
+      // Sort by date descending to keep journal chronological
+      updated.sort((a, b) => b.date.localeCompare(a.date));
       await this.ctx.storage.put("memories", updated);
       return updated;
     }
@@ -43,6 +53,8 @@ export class GlobalDurableObject extends DurableObject {
       const index = memories.findIndex(m => m.id === id);
       if (index !== -1) {
         memories[index] = { ...memories[index], ...updates };
+        // Re-sort after potential date update
+        memories.sort((a, b) => b.date.localeCompare(a.date));
         await this.ctx.storage.put("memories", memories);
       }
       return memories;
