@@ -65,15 +65,11 @@ export function HomePage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.2, ease: [0.19, 1, 0.22, 1] }}
-            className="text-center space-y-16 mb-40 md:mb-64"
+            className="text-center space-y-16 mb-40 md:mb-64 w-full"
           >
-            <div className="inline-flex items-center gap-3 px-8 py-3 rounded-full bg-white/60 backdrop-blur-2xl border border-peach/20 shadow-sm text-peach font-black text-[11px] tracking-[0.4em] uppercase">
-              <Sparkles className="w-3.5 h-3.5" />
-              Living Archive
-            </div>
             <div className="space-y-8">
-              <h1 className="text-[18vw] md:text-[12rem] font-serif font-black text-foreground tracking-[-0.08em] leading-[0.8] drop-shadow-sm select-none">
-                02<span className="text-peach/50 italic">.</span>09<span className="text-peach/50 italic">.</span>23
+              <h1 className="text-[14vw] md:text-[10rem] lg:text-[12rem] font-serif font-black text-foreground tracking-[-0.05em] leading-[0.8] drop-shadow-sm select-none">
+                02<span className="text-peach">-</span>09<span className="text-peach">-</span>2023
               </h1>
               <div className="flex items-center justify-center gap-10">
                 <div className="h-px w-24 bg-gradient-to-r from-transparent via-peach/20 to-transparent" />
