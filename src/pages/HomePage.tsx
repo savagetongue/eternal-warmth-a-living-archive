@@ -5,7 +5,7 @@ import { MemoryCard } from '@/components/MemoryCard';
 import { ComposeModal } from '@/components/ComposeModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Toaster } from '@/components/ui/sonner';
-import { Sparkles, Heart, Plus, Feather, ChevronDown, Link as LinkIcon } from 'lucide-react';
+import { Sparkles, Heart, Plus, Feather, ChevronDown, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
@@ -41,11 +41,12 @@ export function HomePage() {
   const { scrollYProgress } = useScroll();
   const y1 = useTransform(scrollYProgress, [0, 1], [0, -300]);
   const y2 = useTransform(scrollYProgress, [0, 1], [0, -600]);
-  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const opacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
   return (
     <div className="min-h-screen bg-transparent relative selection:bg-peach/30 overflow-x-hidden">
       <ThemeToggle className="fixed top-6 right-6 lg:right-10 z-50" />
       <Toaster richColors position="bottom-right" closeButton />
+      {/* Background Orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <motion.div
           style={{ y: y1 }}
@@ -60,6 +61,7 @@ export function HomePage() {
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="py-24 md:py-36 flex flex-col items-center">
+          {/* Hero Section */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -77,19 +79,20 @@ export function HomePage() {
               </div>
             </div>
             <p className="text-2xl md:text-4xl font-serif italic text-muted-foreground/60 max-w-4xl mx-auto leading-relaxed px-8 text-balance">
-              "A sanctuary where our story unfolds page by page, growing into an eternal tapestry of shared light and links."
+              "A digital sanctuary where our story breathes and grows—a living archive of whispered promises and eternal echoes."
             </p>
             <TimeKeeper />
             <motion.div
               style={{ opacity }}
               animate={{ y: [0, 8, 0] }}
               transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
-              className="pt-12 text-peach/40 flex flex-col items-center gap-2"
+              className="mt-20 md:mt-32 text-peach/40 flex flex-col items-center gap-2"
             >
-              <span className="text-[10px] uppercase tracking-[0.5em] font-black select-none">Scroll to Read</span>
+              <span className="text-[10px] uppercase tracking-[0.5em] font-black select-none">Open the Journal</span>
               <ChevronDown className="w-5 h-5" />
             </motion.div>
           </motion.div>
+          {/* Feed Content */}
           <div className="w-full space-y-32 max-w-6xl">
             <div className="flex flex-col md:flex-row items-center justify-between border-b border-peach/10 pb-12 gap-8">
               <div className="space-y-3 text-center md:text-left">
@@ -97,11 +100,11 @@ export function HomePage() {
                   <Sparkles className="w-8 h-8 text-peach fill-peach/20" />
                   The Unfolding Tapestry
                 </h2>
-                <p className="text-lg text-muted-foreground italic font-serif opacity-70">A chronological archive of our love</p>
+                <p className="text-lg text-muted-foreground italic font-serif opacity-70">A chronological archive of our shared light</p>
               </div>
               <div className="flex flex-col items-center md:items-end gap-2">
                 <div className="px-6 py-2.5 rounded-full bg-white/40 text-[11px] uppercase tracking-[0.4em] text-muted-foreground font-black border border-peach/10 shadow-sm backdrop-blur-sm select-none">
-                  Journeying through {memories.length} Moments
+                  {memories.length} Chapters Written
                 </div>
               </div>
             </div>
@@ -141,18 +144,18 @@ export function HomePage() {
                     className="w-full max-w-4xl text-center py-64 bg-white/30 backdrop-blur-md rounded-[5rem] border-2 border-dashed border-peach/20 flex flex-col items-center justify-center space-y-12"
                   >
                     <div className="p-8 rounded-full bg-peach/5 border border-peach/10 animate-float">
-                      <LinkIcon className="w-16 h-16 text-peach/20" />
+                      <BookOpen className="w-16 h-16 text-peach/20" />
                     </div>
                     <div className="space-y-6">
-                      <p className="font-serif text-4xl italic text-muted-foreground/80">Our story begins here...</p>
-                      <p className="text-xs text-muted-foreground/40 tracking-[0.5em] uppercase font-black px-12">Capture your first memory with a letter or an external link</p>
+                      <p className="font-serif text-4xl italic text-muted-foreground/80">Our first page is waiting...</p>
+                      <p className="text-xs text-muted-foreground/40 tracking-[0.5em] uppercase font-black px-12">Capture a moment with a letter, a photograph, or a shared melody</p>
                     </div>
                     <Button
                       variant="default"
                       className="rounded-full px-16 py-10 bg-peach text-white hover:bg-peach-dark transition-all duration-700 font-serif text-2xl shadow-xl hover:shadow-peach/30"
                       onClick={handleNew}
                     >
-                      Archive First Memory
+                      Write the First Chapter
                     </Button>
                   </motion.div>
                 )}
@@ -160,6 +163,7 @@ export function HomePage() {
             </div>
           </div>
         </div>
+        {/* Footer */}
         <footer className="py-48 text-center space-y-12">
           <div className="flex justify-center gap-10 opacity-20">
              <Heart className="w-4 h-4 fill-peach animate-pulse" />
@@ -174,6 +178,7 @@ export function HomePage() {
           </div>
         </footer>
       </div>
+      {/* Floating Action Button */}
       <motion.div
         initial={{ scale: 0, rotate: -45 }}
         animate={{ scale: 1, rotate: 0 }}

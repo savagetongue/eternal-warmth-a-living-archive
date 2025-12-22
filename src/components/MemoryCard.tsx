@@ -1,7 +1,7 @@
 import React, { forwardRef, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO, isValid } from 'date-fns';
-import { Quote, Pencil, Trash2, Music, Disc3, Loader2, ImageIcon, Video, AlertCircle, Link2Off } from 'lucide-react';
+import { Quote, Pencil, Trash2, Music, Loader2, ImageIcon, Video, Link2Off } from 'lucide-react';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -63,7 +63,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
         "before:absolute before:inset-0 before:bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')] before:opacity-[0.05] before:pointer-events-none"
       )}
     >
-      <div className="absolute top-6 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 flex gap-2 z-20">
+      <div className="absolute top-6 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 flex gap-2 z-30">
         <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-warm-cream/80 backdrop-blur-sm border border-peach/20 text-peach" onClick={() => onEdit?.(memory)}>
           <Pencil className="w-4 h-4" />
         </Button>
@@ -81,20 +81,20 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
           <div className="relative overflow-hidden rounded-[2rem] aspect-video w-full shadow-inner border-4 border-warm-paper" style={{ backgroundColor: fallbackColor }}>
             <AnimatePresence>
               {isMediaLoading && !hasError && (
-                <motion.div exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col items-center justify-center z-10">
+                <motion.div exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-inherit">
                   <MediaIcon className="w-12 h-12 text-foreground/10 animate-pulse mb-4" />
                   <Loader2 className="w-5 h-5 text-foreground/5 animate-spin" />
                 </motion.div>
               )}
             </AnimatePresence>
-            {hasError ? (
+            {hasError || !memory.mediaUrl ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center bg-zinc-50 dark:bg-zinc-900">
                 <Link2Off className="w-12 h-12 text-red-300 mb-4" />
                 <span className="text-[10px] uppercase tracking-[0.3em] text-red-300 font-bold">Unreachable archive source</span>
               </div>
             ) : memory.type === 'image' ? (
               <img
-                src={memory.mediaUrl || memory.previewUrl}
+                src={memory.mediaUrl}
                 alt="Archive item"
                 className={cn("w-full h-full object-contain transition-all duration-700", isMediaLoading ? "blur-sm opacity-50" : "blur-0 opacity-100")}
                 onLoad={() => setIsMediaLoading(false)}
@@ -103,13 +103,13 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
               />
             ) : (
               <video
-                src={memory.mediaUrl || 'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4'}
+                src={memory.mediaUrl}
                 poster={memory.previewUrl}
                 className="w-full h-full object-contain"
                 controls
                 preload="metadata"
                 onLoadedData={() => setIsMediaLoading(false)}
-                onError={() => { if (!memory.mediaUrl) setHasError(true); setIsMediaLoading(false); }}
+                onError={() => { setIsMediaLoading(false); setHasError(true); }}
               />
             )}
           </div>
@@ -133,11 +133,16 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                 {memory.fileName && <span className="text-[9px] text-muted-foreground truncate max-w-[150px]">{memory.fileName}</span>}
               </div>
             </div>
-            {memory.mediaUrl ? (
-              <audio src={memory.mediaUrl} controls className="w-full relative z-10 opacity-80" />
+            {memory.mediaUrl && !hasError ? (
+              <audio 
+                src={memory.mediaUrl} 
+                controls 
+                className="w-full relative z-10 opacity-80" 
+                onError={() => setHasError(true)}
+              />
             ) : (
               <div className="w-full h-12 flex items-center justify-center bg-white/40 border-2 border-dashed border-peach/20 rounded-xl relative z-10">
-                <span className="text-sm text-muted-foreground/60">Archived Signature</span>
+                <span className="text-sm text-muted-foreground/60">{hasError ? "Corrupted Audio Stream" : "Archived Signature"}</span>
               </div>
             )}
           </div>
