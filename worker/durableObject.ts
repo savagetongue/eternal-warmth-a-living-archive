@@ -25,23 +25,25 @@ const INITIAL_MEMORIES: MemoryEntry[] = [
 export class GlobalDurableObject extends DurableObject {
     private async sortMemories(memories: MemoryEntry[]): Promise<MemoryEntry[]> {
       return [...memories].sort((a, b) => {
-        // Handle various date formats gracefully for strict chronological ordering
-        const dateA = new Date(a.date).getTime();
-        const dateB = new Date(b.date).getTime();
+        // Handle potentially malformed dates by falling back to epoch
+        const parseDate = (d: string) => {
+          const parsed = new Date(d).getTime();
+          return isNaN(parsed) ? 0 : parsed;
+        };
+        const dateA = parseDate(a.date);
+        const dateB = parseDate(b.date);
         return dateA - dateB;
       });
     }
     async getMemories(): Promise<MemoryEntry[]> {
       const memories = await this.ctx.storage.get("memories");
       if (memories) {
-        // Clean and maintain metadata integrity
         const cleaned = (memories as any[]).map((m) => {
           const { mood, ...rest } = m;
           if (!rest.date) {
             rest.date = new Date().toISOString().split('T')[0];
           }
           if (rest.type !== 'text' && (!rest.dominantColor || !rest.dominantColor.startsWith('#'))) {
-            // Re-apply signature if missing
             rest.dominantColor = rest.dominantColor || '#FDFBF7';
           }
           return rest as MemoryEntry;
@@ -53,12 +55,18 @@ export class GlobalDurableObject extends DurableObject {
       return initial;
     }
     async addMemory(entry: MemoryEntry): Promise<MemoryEntry[]> {
+      if (!entry.content?.trim()) {
+        throw new Error("Archive entries cannot be empty of narrative.");
+      }
       const memories = await this.getMemories();
       const updated = await this.sortMemories([...memories, entry]);
       await this.ctx.storage.put("memories", updated);
       return updated;
     }
     async updateMemory(id: string, updates: Partial<Omit<MemoryEntry, "id">>): Promise<MemoryEntry[]> {
+      if (updates.content !== undefined && !updates.content.trim()) {
+        throw new Error("Archive entries cannot be empty of narrative.");
+      }
       const memories = await this.getMemories();
       const index = memories.findIndex(m => m.id === id);
       if (index !== -1) {
@@ -84,7 +92,7 @@ export class GlobalDurableObject extends DurableObject {
       await this.ctx.storage.put("counter_value", v);
       return v;
     }
-    // Unused template methods kept for signature compatibility
+    // signature compatibility
     async getDemoItems(): Promise<DemoItem[]> { return []; }
     async addDemoItem(item: any) { return []; }
     async updateDemoItem(id: string, updates: any) { return []; }

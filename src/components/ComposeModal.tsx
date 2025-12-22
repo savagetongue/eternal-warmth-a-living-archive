@@ -11,8 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { Feather, ImageIcon, Video, Music, Type, Upload, Calendar, Link as LinkIcon, Info } from 'lucide-react';
+import { CheckCircle2, Feather, ImageIcon, Video, Music, Type, Upload, Calendar, Link as LinkIcon, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import type { MemoryEntry, MemoryType } from '@shared/types';
 import { cn } from '@/lib/utils';
@@ -33,9 +32,18 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [signatureCaptured, setSignatureCaptured] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
   const objectUrlsRef = useRef<string[]>([]);
+  const cleanupObjectUrls = useCallback(() => {
+    objectUrlsRef.current.forEach((url) => {
+      if (url.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+      }
+    });
+    objectUrlsRef.current = [];
+  }, []);
   const extractDominantColor = (img: HTMLImageElement): string => {
     const canvas = document.createElement('canvas');
     canvas.width = 1;
@@ -53,12 +61,11 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   };
   const generateHighResThumbnail = (img: HTMLImageElement): string => {
     const canvas = document.createElement('canvas');
-    const maxDim = 1024;
     const originalWidth = img.naturalWidth || img.width;
     const originalHeight = img.naturalHeight || img.height;
-    const scale = Math.min(1, maxDim / Math.max(originalWidth, originalHeight));
-    const targetWidth = Math.floor(originalWidth * scale);
-    const targetHeight = Math.floor(originalHeight * scale);
+    const targetWidth = Math.min(500, originalWidth);
+    const scaleFactor = targetWidth / originalWidth;
+    const targetHeight = Math.floor(originalHeight * scaleFactor);
     canvas.width = targetWidth;
     canvas.height = targetHeight;
     const ctx = canvas.getContext('2d');
@@ -66,16 +73,8 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-    return canvas.toDataURL('image/jpeg', 0.92); // High-quality thumbnail ~1024px max dim, JPEG 92% for clarity within limits
+    return canvas.toDataURL('image/jpeg', 0.5); // Durable Objects have size limits, keep it compact
   };
-  const cleanupObjectUrls = useCallback(() => {
-    objectUrlsRef.current.forEach((url) => {
-      if (url.startsWith('blob:')) {
-        URL.revokeObjectURL(url);
-      }
-    });
-    objectUrlsRef.current = [];
-  }, []);
   const generateSignature = (file: File): Promise<{ blobUrl: string; base64Thumb: string; color: string }> => {
     return new Promise((resolve) => {
       const objectUrl = URL.createObjectURL(file);
@@ -87,7 +86,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
         const img = new Image();
         const timeout = setTimeout(() => {
           resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor });
-        }, 3000);
+        }, 5000);
         img.onload = () => {
           clearTimeout(timeout);
           const color = extractDominantColor(img);
@@ -115,6 +114,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       setDominantColor(initialData.dominantColor || '');
       setCurrentFileName(initialData.fileName || '');
       setDate(initialData.date);
+      setSignatureCaptured(!!initialData.previewUrl);
     } else {
       setContent('');
       setType('text');
@@ -124,6 +124,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       setDominantColor('');
       setCurrentFileName('');
       setDate(new Date().toISOString().split('T')[0]);
+      setSignatureCaptured(false);
     }
     setIsProcessing(false);
   }, [initialData, cleanupObjectUrls]);
@@ -138,15 +139,14 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     if (!file) return;
     setCurrentFileName(file.name);
     setIsProcessing(true);
+    setSignatureCaptured(false);
     try {
       const { blobUrl, base64Thumb, color } = await generateSignature(file);
       setLivePreviewUrl(blobUrl);
       setPreviewUrl(base64Thumb);
       setDominantColor(color);
-      toast.success("Visual signature captured locally.");
-      if (!mediaUrl) {
-        toast.info("For permanent storage, please provide an external URL.", { duration: 5000 });
-      }
+      setSignatureCaptured(true);
+      toast.success("Visual signature captured.");
     } catch (err) {
       toast.error("Failed to process local preview.");
     } finally {
@@ -191,14 +191,16 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     }
   };
   const handleTypeChange = (newType: MemoryType) => {
+    cleanupObjectUrls();
     setType(newType);
+    setSignatureCaptured(false);
+    setLivePreviewUrl('');
+    setPreviewUrl('');
+    setCurrentFileName('');
     if (newType !== 'text') {
       setTimeout(() => urlInputRef.current?.focus(), 100);
     } else {
       setMediaUrl('');
-      setPreviewUrl('');
-      setLivePreviewUrl('');
-      setDominantColor('');
     }
   };
   return (
@@ -227,7 +229,12 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">The Narrative</Label>
+            <div className="flex justify-between items-end">
+              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">The Narrative</Label>
+              <span className={cn("text-[9px] font-bold tracking-widest", content.length > 500 ? "text-red-400" : "text-peach/40")}>
+                {content.length} CHARS
+              </span>
+            </div>
             <Textarea
               placeholder="A whisper, a shout, a silent look..."
               className="min-h-[140px] bg-white rounded-2xl border-peach/10 focus:ring-peach/30 resize-none font-serif text-lg p-5 leading-relaxed shadow-inner placeholder:text-peach/30"
@@ -297,22 +304,26 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                   onClick={() => !isProcessing && fileInputRef.current?.click()}
                   className={cn(
                     "relative border-2 border-dashed rounded-[2rem] p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden",
-                    isProcessing ? "border-peach/30 bg-peach/5" : "hover:bg-peach/5 border-peach/10 bg-white"
+                    signatureCaptured ? "border-green-200 bg-green-50/30" : (isProcessing ? "border-peach/30 bg-peach/5" : "hover:bg-peach/5 border-peach/10 bg-white")
                   )}
                 >
                   {(livePreviewUrl || previewUrl) && !isProcessing && (
                     <div className="absolute inset-0 z-0">
                        {type === 'image' ? (
-                          <img src={livePreviewUrl || previewUrl} className="w-full h-full object-cover opacity-20" alt="Preview" />
+                          <img src={livePreviewUrl || previewUrl} className="w-full h-full object-cover opacity-10" alt="Preview" />
                        ) : (
-                          <div className="w-full h-full opacity-10" style={{ backgroundColor: dominantColor }} />
+                          <div className="w-full h-full opacity-5" style={{ backgroundColor: dominantColor }} />
                        )}
                     </div>
                   )}
-                  <Upload className={cn("w-6 h-6 relative z-10", isProcessing ? "text-peach animate-bounce" : "text-peach/40")} />
+                  {signatureCaptured ? (
+                    <CheckCircle2 className="w-6 h-6 text-green-500 relative z-10" />
+                  ) : (
+                    <Upload className={cn("w-6 h-6 relative z-10", isProcessing ? "text-peach animate-bounce" : "text-peach/40")} />
+                  )}
                   <div className="text-center relative z-10">
                     <p className="text-xs font-bold text-foreground/80">
-                      {isProcessing ? "Extracting Essence..." : (livePreviewUrl || previewUrl) ? "Signature Captured" : `Select ${type} for signature`}
+                      {isProcessing ? "Extracting Essence..." : signatureCaptured ? "Signature Captured" : `Select ${type} for signature`}
                     </p>
                     {currentFileName && (
                       <p className="text-[9px] text-muted-foreground uppercase tracking-widest mt-1 truncate max-w-[150px]">
@@ -329,9 +340,6 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                     disabled={isProcessing}
                   />
                 </div>
-                <p className="text-[9px] text-center text-muted-foreground italic px-4 leading-tight">
-                  We will store a small visual signature (thumbnail) for the archive. Note: Full files are not uploaded to our server.
-                </p>
               </div>
             </div>
           )}
