@@ -59,7 +59,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       whileHover={{ y: -8, rotate: 0, transition: { duration: 0.4, ease: "easeOut" } }}
       viewport={{ once: true, margin: "-50px" }}
       className={cn(
-        "group relative bg-white dark:bg-zinc-950 rounded-[2.5rem] p-6 sm:p-12 border border-peach/10 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden",
+        "group relative bg-white dark:bg-zinc-950 rounded-[2.5rem] p-6 sm:p-12 border border-peach/10 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden transition-colors duration-500",
         "before:absolute before:inset-0 before:bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')] before:opacity-[0.05] before:pointer-events-none"
       )}
     >
@@ -73,46 +73,70 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       </div>
       <div className="mb-8 flex items-center gap-3">
         <div className="h-px flex-1 bg-peach/10" />
-        <span className="text-[10px] sm:text-xs font-serif italic text-muted-foreground tracking-widest uppercase">{formattedDate}</span>
+        <span className="text-[10px] sm:text-xs font-serif italic text-muted-foreground tracking-[0.2em] sm:tracking-[0.4em] uppercase">{formattedDate}</span>
         <div className="h-px flex-1 bg-peach/10" />
       </div>
       {(memory.type === 'image' || memory.type === 'video') && (
         <div className="space-y-8">
-          <div className="relative overflow-hidden rounded-[2rem] aspect-video w-full shadow-inner border-4 border-warm-paper" style={{ backgroundColor: fallbackColor }}>
+          <div 
+            className="relative overflow-hidden rounded-[2rem] aspect-video w-full shadow-inner border-4 border-warm-paper dark:border-zinc-900 transition-all duration-1000" 
+            style={{ backgroundColor: fallbackColor }}
+          >
             <AnimatePresence>
-              {isMediaLoading && !hasError && (
-                <motion.div exit={{ opacity: 0 }} className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-inherit">
-                  <MediaIcon className="w-12 h-12 text-foreground/10 animate-pulse mb-4" />
-                  <Loader2 className="w-5 h-5 text-foreground/5 animate-spin" />
+              {(isMediaLoading || hasError) && (
+                <motion.div 
+                  initial={{ opacity: 0 }} 
+                  animate={{ opacity: 1 }} 
+                  exit={{ opacity: 0 }} 
+                  className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-inherit"
+                >
+                  {!hasError ? (
+                    <div className="flex flex-col items-center gap-4">
+                      <MediaIcon className="w-12 h-12 text-foreground/10 animate-pulse" />
+                      <Loader2 className="w-5 h-5 text-foreground/20 animate-spin" />
+                    </div>
+                  ) : (
+                    <motion.div 
+                      initial={{ scale: 0.9, opacity: 0 }} 
+                      animate={{ scale: 1, opacity: 1 }} 
+                      className="flex flex-col items-center gap-4 text-center px-6"
+                    >
+                      <MediaIcon className="w-16 h-16 text-foreground/5 mb-2" />
+                      <div className="px-4 py-2 rounded-full bg-white/30 backdrop-blur-md border border-white/40 text-[9px] font-black uppercase tracking-[0.4em] text-foreground/60">
+                        Archived Essence {memory.fileName ? `• ${memory.fileName}` : ''}
+                      </div>
+                    </motion.div>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
-            {(!memory.mediaUrl || hasError) ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 bg-inherit">
-                <MediaIcon className="w-24 h-24 text-white/40 mb-4" />
-                <div className="absolute bottom-6 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-[9px] font-black uppercase tracking-[0.4em] text-white/90">
-                  Archived Essence {memory.fileName ? `• ${memory.fileName}` : ''}
-                </div>
-              </div>
-            ) : memory.type === 'image' ? (
-              <img
-                src={memory.mediaUrl}
-                alt="Archive item"
-                className={cn("w-full h-full object-contain transition-all duration-700", isMediaLoading ? "blur-sm opacity-50" : "blur-0 opacity-100")}
-                onLoad={() => setIsMediaLoading(false)}
-                onError={() => { setIsMediaLoading(false); setHasError(true); }}
-                loading="lazy"
-              />
-            ) : (
-              <video
-                src={memory.mediaUrl}
-                poster={memory.previewUrl}
-                className="w-full h-full object-contain"
-                controls
-                preload="metadata"
-                onLoadedData={() => setIsMediaLoading(false)}
-                onError={() => { setIsMediaLoading(false); setHasError(true); }}
-              />
+            {memory.mediaUrl && !hasError && (
+              memory.type === 'image' ? (
+                <img
+                  src={memory.mediaUrl}
+                  alt="Archive item"
+                  className={cn(
+                    "w-full h-full object-contain transition-all duration-1000 ease-in-out", 
+                    isMediaLoading ? "blur-xl opacity-0 scale-105" : "blur-0 opacity-100 scale-100"
+                  )}
+                  onLoad={() => setIsMediaLoading(false)}
+                  onError={() => { setIsMediaLoading(false); setHasError(true); }}
+                  loading="lazy"
+                />
+              ) : (
+                <video
+                  src={memory.mediaUrl}
+                  poster={memory.previewUrl}
+                  className={cn(
+                    "w-full h-full object-contain transition-opacity duration-1000",
+                    isMediaLoading ? "opacity-0" : "opacity-100"
+                  )}
+                  controls={!isMediaLoading}
+                  preload="metadata"
+                  onLoadedData={() => setIsMediaLoading(false)}
+                  onError={() => { setIsMediaLoading(false); setHasError(true); }}
+                />
+              )
             )}
           </div>
           <p className="text-xl md:text-3xl font-serif leading-relaxed text-foreground/90 italic text-center px-4 whitespace-pre-wrap break-words">
@@ -129,7 +153,9 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
           <div className="relative p-8 rounded-[2.5rem] border border-peach/10 overflow-hidden flex flex-col items-center gap-6">
             <div className="absolute inset-0 opacity-20" style={{ backgroundColor: fallbackColor }} />
             <div className="flex items-center gap-4 relative z-10">
-              <div className="p-3 rounded-full bg-white/50 text-peach shadow-sm"><Music className="w-6 h-6" /></div>
+              <div className="p-3 rounded-full bg-white/50 dark:bg-zinc-800/50 text-peach shadow-sm">
+                <Music className="w-6 h-6" />
+              </div>
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-peach/60">Audio Keepsake</span>
                 {memory.fileName && <span className="text-[9px] text-muted-foreground truncate max-w-[150px]">{memory.fileName}</span>}
@@ -144,7 +170,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                 onError={() => setHasError(true)}
               />
             ) : (
-              <div className="w-full h-16 flex items-center justify-center bg-white/40 border-2 border-dashed border-peach/20 rounded-2xl relative z-10">
+              <div className="w-full h-16 flex items-center justify-center bg-white/40 dark:bg-black/20 border-2 border-dashed border-peach/20 rounded-2xl relative z-10">
                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-peach/40">Essence Recorded</span>
               </div>
             )}
