@@ -1,138 +1,100 @@
-// Home page of the app.
-// Currently a demo placeholder "please wait" screen.
-// Replace this file with your actual app UI. Do not delete it to use some other file as homepage. Simply replace the entire contents of this file.
-
-import { useEffect, useMemo, useState } from 'react'
-import { Sparkles } from 'lucide-react'
-
-import { ThemeToggle } from '@/components/ThemeToggle'
-import { HAS_TEMPLATE_DEMO, TemplateDemo } from '@/components/TemplateDemo'
-import { Button } from '@/components/ui/button'
-import { Toaster, toast } from '@/components/ui/sonner'
-
-function formatDuration(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000))
-  const m = Math.floor(total / 60)
-  const s = total % 60
-  return `${m}:${s.toString().padStart(2, '0')}`
-}
-
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { TimeKeeper } from '@/components/TimeKeeper';
+import { MemoryCard } from '@/components/MemoryCard';
+import { ComposeModal } from '@/components/ComposeModal';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { Toaster } from '@/components/ui/sonner';
+import { Sparkles, Heart } from 'lucide-react';
+import type { MemoryEntry } from '@shared/types';
 export function HomePage() {
-  const [coins, setCoins] = useState(0)
-  const [isRunning, setIsRunning] = useState(false)
-  const [startedAt, setStartedAt] = useState<number | null>(null)
-  const [elapsedMs, setElapsedMs] = useState(0)
-
-  useEffect(() => {
-    if (!isRunning || startedAt === null) return
-
-    const t = setInterval(() => {
-      setElapsedMs(Date.now() - startedAt)
-    }, 250)
-
-    return () => clearInterval(t)
-  }, [isRunning, startedAt])
-
-  const formatted = useMemo(() => formatDuration(elapsedMs), [elapsedMs])
-
-  const onPleaseWait = () => {
-    setCoins((c) => c + 1)
-
-    if (!isRunning) {
-      // Resume from the current elapsed time
-      setStartedAt(Date.now() - elapsedMs)
-      setIsRunning(true)
-      toast.success('Building your app…', {
-        description: "Hang tight — we're setting everything up.",
-      })
-      return
+  const [memories, setMemories] = useState<MemoryEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const fetchMemories = async () => {
+    try {
+      const res = await fetch('/api/memories');
+      const json = await res.json();
+      if (json.success) {
+        setMemories(json.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch memories", err);
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsRunning(false)
-    toast.info('Still working…', {
-      description: 'You can come back in a moment.',
-    })
-  }
-
-  const onReset = () => {
-    setCoins(0)
-    setIsRunning(false)
-    setStartedAt(null)
-    setElapsedMs(0)
-    toast('Reset complete')
-  }
-
-  const onAddCoin = () => {
-    setCoins((c) => c + 1)
-    toast('Coin added')
-  }
-
+  };
+  useEffect(() => {
+    fetchMemories();
+  }, []);
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground p-4 overflow-hidden relative">
+    <div className="min-h-screen bg-transparent relative selection:bg-peach/30">
       <ThemeToggle />
-      <div className="absolute inset-0 bg-gradient-rainbow opacity-10 dark:opacity-20 pointer-events-none" />
-
-      <div className="text-center space-y-8 relative z-10 animate-fade-in w-full">
-        <div className="flex justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-primary floating">
-            <Sparkles className="w-8 h-8 text-white rotating" />
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <h1 className="text-5xl md:text-7xl font-display font-bold text-balance leading-tight">
-            Creating your <span className="text-gradient">app</span>
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto text-pretty">
-            Your application would be ready soon.
-          </p>
-        </div>
-
-        {HAS_TEMPLATE_DEMO ? (
-          <div className="max-w-5xl mx-auto text-left">
-            <TemplateDemo />
-          </div>
-        ) : (
-          <>
-            <div className="flex justify-center gap-4">
-              <Button
-                size="lg"
-                onClick={onPleaseWait}
-                className="btn-gradient px-8 py-4 text-lg font-semibold hover:-translate-y-0.5 transition-all duration-200"
-                aria-live="polite"
-              >
-                Please Wait
-              </Button>
-            </div>
-
-            <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-              <div>
-                Time elapsed:{' '}
-                <span className="font-medium tabular-nums text-foreground">{formatted}</span>
-              </div>
-              <div>
-                Coins:{' '}
-                <span className="font-medium tabular-nums text-foreground">{coins}</span>
-              </div>
-            </div>
-
-            <div className="flex justify-center gap-2">
-              <Button variant="outline" size="sm" onClick={onReset}>
-                Reset
-              </Button>
-              <Button variant="outline" size="sm" onClick={onAddCoin}>
-                Add Coin
-              </Button>
-            </div>
-          </>
-        )}
+      <Toaster richColors position="top-center" />
+      {/* Decorative Orbs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-peach/20 rounded-full blur-[120px] animate-breathe" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-mist/20 rounded-full blur-[120px] animate-breathe" style={{ animationDelay: '2s' }} />
       </div>
-
-      <footer className="absolute bottom-8 text-center text-muted-foreground/80">
-        <p>Powered by Cloudflare</p>
-      </footer>
-
-      <Toaster richColors closeButton />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="py-20 md:py-32 flex flex-col items-center">
+          {/* Prologue Section */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center space-y-6"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/50 backdrop-blur-sm border border-peach/20 shadow-sm text-peach font-medium text-sm">
+              <Sparkles className="w-4 h-4" />
+              Eternal Warmth
+            </div>
+            <h1 className="text-6xl md:text-8xl font-serif font-bold text-foreground tracking-tight">
+              Anand <span className="text-peach">&</span> Sakshi
+            </h1>
+            <div className="w-24 h-px bg-gradient-to-r from-transparent via-peach/50 to-transparent mx-auto" />
+            <p className="text-xl md:text-2xl font-serif italic text-muted-foreground/80 max-w-xl mx-auto text-pretty">
+              "A living archive of moments, letters, and the beautiful infinity we call ours."
+            </p>
+            <TimeKeeper />
+          </motion.div>
+          {/* Journal Section */}
+          <div className="w-full mt-24 space-y-12">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-serif font-semibold text-foreground flex items-center gap-2">
+                <Heart className="w-5 h-5 text-peach fill-peach/20" />
+                The Journal of Days
+              </h2>
+              <div className="text-xs uppercase tracking-widest text-muted-foreground font-medium">
+                {memories.length} Memories Saved
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-8">
+              <AnimatePresence mode="popLayout">
+                {isLoading ? (
+                  [...Array(3)].map((_, i) => (
+                    <div key={i} className="w-full h-48 bg-muted animate-pulse rounded-3xl" />
+                  ))
+                ) : memories.length > 0 ? (
+                  memories.map((memory, index) => (
+                    <MemoryCard 
+                      key={memory.id} 
+                      memory={memory} 
+                      index={index} 
+                    />
+                  ))
+                ) : (
+                  <div className="text-center py-20 bg-white/30 backdrop-blur-sm rounded-3xl border border-dashed border-border">
+                    <p className="font-serif italic text-muted-foreground">The first page awaits its first word...</p>
+                  </div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+        <footer className="py-12 text-center text-sm text-muted-foreground font-serif italic">
+          Bound by time, freed by memory.
+        </footer>
+      </div>
+      <ComposeModal onSuccess={fetchMemories} />
     </div>
-  )
+  );
 }
