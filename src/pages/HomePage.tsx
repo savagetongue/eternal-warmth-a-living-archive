@@ -65,7 +65,7 @@ export function HomePage() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-            className="text-center space-y-12 mb-40"
+            className="text-center space-y-12 mb-20 md:mb-32"
           >
             <div className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-white/60 backdrop-blur-xl border border-peach/20 shadow-sm text-peach font-bold text-[10px] tracking-[0.3em] uppercase">
               <Sparkles className="w-3.5 h-3.5" />
