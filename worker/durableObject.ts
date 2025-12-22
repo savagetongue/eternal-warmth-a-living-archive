@@ -41,6 +41,8 @@ const INITIAL_MEMORIES: MemoryEntry[] = [
     dominantColor: '#A1C4FD'
   }
 ];
+const MEM_PREFIX = "mem:";
+const INIT_KEY = "archive_initialized_v2";
 export class GlobalDurableObject extends DurableObject {
     private async sortMemories(memories: MemoryEntry[]): Promise<MemoryEntry[]> {
       return [...memories].sort((a, b) => {
@@ -54,67 +56,53 @@ export class GlobalDurableObject extends DurableObject {
       });
     }
     async getMemories(): Promise<MemoryEntry[]> {
-      const memories = await this.ctx.storage.get("memories");
-      if (memories) {
-        const cleaned = (memories as any[]).map((m) => {
-          // Explicitly preserve visual signatures and metadata during deserialization
-          const entry: MemoryEntry = {
-            id: m.id,
-            content: m.content || "",
-            date: m.date || new Date().toISOString().split('T')[0],
-            type: m.type || 'text',
-            mediaUrl: m.mediaUrl,
-            previewUrl: m.previewUrl, // Hardened: Ensure previewUrl is strictly mapped
-            dominantColor: m.dominantColor,
-            fileName: m.fileName
-          };
-          if (entry.type !== 'text' && (!entry.dominantColor || !entry.dominantColor.startsWith('#'))) {
-            entry.dominantColor = entry.dominantColor || '#FDFBF7';
-          }
-          return entry;
-        });
-        return await this.sortMemories(cleaned);
+      const initialized = await this.ctx.storage.get<boolean>(INIT_KEY);
+      if (!initialized) {
+        // Migration/Initialization: Seed the individual keys
+        for (const entry of INITIAL_MEMORIES) {
+          await this.ctx.storage.put(MEM_PREFIX + entry.id, entry);
+        }
+        await this.ctx.storage.put(INIT_KEY, true);
+        // Handle legacy storage if it exists
+        await this.ctx.storage.delete("memories");
       }
-      const initial = await this.sortMemories([...INITIAL_MEMORIES]);
-      await this.ctx.storage.put("memories", initial);
-      return initial;
+      const memoryMap = await this.ctx.storage.list<MemoryEntry>({ prefix: MEM_PREFIX });
+      const memories = Array.from(memoryMap.values()).map(m => ({
+        ...m,
+        content: m.content || "",
+        date: m.date || new Date().toISOString().split('T')[0],
+        type: m.type || 'text',
+        dominantColor: m.dominantColor || (m.type !== 'text' ? '#FDFBF7' : undefined)
+      }));
+      return await this.sortMemories(memories);
     }
     async addMemory(entry: MemoryEntry): Promise<MemoryEntry[]> {
       if (!entry.content?.trim()) {
         throw new Error("Archive entries cannot be empty of narrative.");
       }
-      // Ensure visual signature integrity before saving
       const sanitizedEntry: MemoryEntry = {
         ...entry,
         previewUrl: entry.previewUrl || undefined,
         dominantColor: entry.dominantColor || undefined,
         fileName: entry.fileName || undefined
       };
-      const memories = await this.getMemories();
-      const updated = await this.sortMemories([...memories, sanitizedEntry]);
-      await this.ctx.storage.put("memories", updated);
-      return updated;
+      await this.ctx.storage.put(MEM_PREFIX + entry.id, sanitizedEntry);
+      return await this.getMemories();
     }
     async updateMemory(id: string, updates: Partial<Omit<MemoryEntry, "id">>): Promise<MemoryEntry[]> {
       if (updates.content !== undefined && !updates.content.trim()) {
         throw new Error("Archive entries cannot be empty of narrative.");
       }
-      const memories = await this.getMemories();
-      const index = memories.findIndex(m => m.id === id);
-      if (index !== -1) {
-        // Merge updates carefully to not lose previewUrl if not provided in the patch
-        memories[index] = { ...memories[index], ...updates };
-        const updated = await this.sortMemories(memories);
-        await this.ctx.storage.put("memories", updated);
-        return updated;
+      const existing = await this.ctx.storage.get<MemoryEntry>(MEM_PREFIX + id);
+      if (existing) {
+        const updated = { ...existing, ...updates };
+        await this.ctx.storage.put(MEM_PREFIX + id, updated);
       }
-      return memories;
+      return await this.getMemories();
     }
     async deleteMemory(id: string): Promise<MemoryEntry[]> {
-      const memories = await this.getMemories();
-      const updated = memories.filter(m => m.id !== id);
-      await this.ctx.storage.put("memories", updated);
-      return updated;
+      await this.ctx.storage.delete(MEM_PREFIX + id);
+      return await this.getMemories();
     }
     async getCounterValue(): Promise<number> {
       return (await this.ctx.storage.get("counter_value")) || 0;

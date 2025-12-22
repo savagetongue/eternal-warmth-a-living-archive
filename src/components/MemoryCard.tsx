@@ -83,7 +83,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       </div>
       <div className="mb-8 flex items-center gap-3">
         <div className="h-px flex-1 bg-peach/10" />
-        <span className="text-[10px] sm:text-xs font-serif italic text-muted-foreground tracking-[0.2em] sm:tracking-[0.4em] uppercase">{formattedDate}</span>
+        <span className="text-[10px] sm:text-xs font-serif italic text-muted-foreground tracking-[0.2em] sm:tracking-[0.4em] uppercase whitespace-nowrap">{formattedDate}</span>
         <div className="h-px flex-1 bg-peach/10" />
       </div>
       {(memory.type === 'image' || memory.type === 'video') && (
@@ -92,7 +92,6 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
             className="relative overflow-hidden rounded-[2rem] aspect-video w-full shadow-inner border-4 border-warm-paper dark:border-zinc-900 transition-all duration-1000"
             style={{ backgroundColor: fallbackColor }}
           >
-            {/* Visual Signature Placeholder Layer */}
             {memory.previewUrl && (
               <img
                 src={memory.previewUrl}
@@ -176,7 +175,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
             <div className="absolute inset-0 opacity-20" style={{ backgroundColor: fallbackColor }} />
             <div className="flex items-center gap-4 relative z-10">
               <div className="p-3 rounded-full bg-white/50 dark:bg-zinc-800/50 text-peach shadow-sm">
-                <Music className="w-6 h-6" />
+                <Music className="w-6 h-6 animate-slow-spin" />
               </div>
               <div className="flex flex-col">
                 <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-peach/60">Audio Keepsake</span>
@@ -189,7 +188,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                 controls
                 className="w-full relative z-10 opacity-80"
                 onCanPlay={() => setIsMediaLoading(false)}
-                onError={() => setHasError(true)}
+                onError={() => { setIsMediaLoading(false); setHasError(true); }}
               />
             ) : (
               <div className="w-full h-16 flex items-center justify-center bg-white/40 dark:bg-black/20 border-2 border-dashed border-peach/20 rounded-2xl relative z-10">

@@ -62,7 +62,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     const canvas = document.createElement('canvas');
     const sourceWidth = (source as any).naturalWidth || (source as any).videoWidth || source.width;
     const sourceHeight = (source as any).naturalHeight || (source as any).videoHeight || source.height;
-    const targetWidth = Math.min(600, sourceWidth);
+    const targetWidth = Math.min(400, sourceWidth); // Reduced from 600
     const scaleFactor = targetWidth / sourceWidth;
     const targetHeight = Math.floor(sourceHeight * scaleFactor);
     canvas.width = targetWidth;
@@ -70,9 +70,9 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     const ctx = canvas.getContext('2d');
     if (!ctx) return '';
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    ctx.imageSmoothingQuality = 'medium';
     ctx.drawImage(source, 0, 0, targetWidth, targetHeight);
-    return canvas.toDataURL('image/jpeg', 0.6);
+    return canvas.toDataURL('image/jpeg', 0.4); // Reduced from 0.6
   };
   const generateSignature = (file: File): Promise<{ blobUrl: string; base64Thumb: string; color: string }> => {
     return new Promise((resolve) => {
@@ -122,12 +122,12 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   };
   const resetForm = useCallback(() => {
     cleanupObjectUrls();
+    setLivePreviewUrl(''); // Force clear previous blob refs
     if (initialData) {
       setContent(initialData.content);
       setType(initialData.type);
       setMediaUrl(initialData.mediaUrl || '');
       setPreviewUrl(initialData.previewUrl || '');
-      setLivePreviewUrl('');
       setDominantColor(initialData.dominantColor || '');
       setCurrentFileName(initialData.fileName || '');
       setDate(initialData.date);
@@ -137,7 +137,6 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       setType('text');
       setMediaUrl('');
       setPreviewUrl('');
-      setLivePreviewUrl('');
       setDominantColor('');
       setCurrentFileName('');
       setDate(new Date().toISOString().split('T')[0]);

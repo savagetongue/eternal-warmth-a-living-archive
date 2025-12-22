@@ -56,12 +56,17 @@ export default {
   			float: {
   				'0%, 100%': { transform: 'translateY(0px)' },
   				'50%': { transform: 'translateY(-10px)' }
-  			}
+  			},
+			'slow-spin': {
+				'0%': { transform: 'rotate(0deg)' },
+				'100%': { transform: 'rotate(360deg)' }
+			}
   		},
   		animation: {
   			'fade-in': 'fade-in 1s ease-out',
   			'breathe': 'breathe 8s ease-in-out infinite',
   			float: 'float 4s ease-in-out infinite',
+			'slow-spin': 'slow-spin 20s linear infinite'
   		}
   	}
   },
