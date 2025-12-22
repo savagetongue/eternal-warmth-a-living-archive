@@ -1,58 +1,56 @@
 import { DurableObject } from "cloudflare:workers";
-import type { DemoItem } from '@shared/types';
-import { MOCK_ITEMS } from '@shared/mock-data';
-
-// **DO NOT MODIFY THE CLASS NAME**
+import type { MemoryEntry, DemoItem } from '@shared/types';
+const INITIAL_MEMORIES: MemoryEntry[] = [
+  {
+    id: '1',
+    content: "The day it all began. A moment frozen in time, the start of our eternal archive.",
+    date: '2023-09-02',
+    type: 'text',
+    mood: 'Genesis'
+  },
+  {
+    id: '2',
+    content: "Watching the sunset and realizing that every tomorrow belongs to us.",
+    date: '2023-09-15',
+    type: 'text',
+    mood: 'Peace'
+  },
+  {
+    id: '3',
+    content: "A beautiful memory captured.",
+    date: '2023-10-10',
+    type: 'image',
+    mediaUrl: 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&q=80&w=800',
+    mood: 'Joy'
+  }
+];
 export class GlobalDurableObject extends DurableObject {
-    async getCounterValue(): Promise<number> {
-      const value = (await this.ctx.storage.get("counter_value")) || 0;
-      return value as number;
-    }
-  
-    async increment(amount = 1): Promise<number> {
-      let value: number = (await this.ctx.storage.get("counter_value")) || 0;
-      value += amount;
-      await this.ctx.storage.put("counter_value", value);
-      return value;
-    }
-  
-    async decrement(amount = 1): Promise<number> {
-      let value: number = (await this.ctx.storage.get("counter_value")) || 0;
-      value -= amount;
-      await this.ctx.storage.put("counter_value", value);
-      return value;
-    }
-
-    async getDemoItems(): Promise<DemoItem[]> {
-      const items = await this.ctx.storage.get("demo_items");
-      if (items) {
-        return items as DemoItem[];
+    async getMemories(): Promise<MemoryEntry[]> {
+      const memories = await this.ctx.storage.get("memories");
+      if (memories) {
+        return memories as MemoryEntry[];
       }
-      
-      await this.ctx.storage.put("demo_items", MOCK_ITEMS);
-      return MOCK_ITEMS;
+      await this.ctx.storage.put("memories", INITIAL_MEMORIES);
+      return INITIAL_MEMORIES;
     }
-
-    async addDemoItem(item: DemoItem): Promise<DemoItem[]> {
-      const items = await this.getDemoItems();
-      const updatedItems = [...items, item];
-      await this.ctx.storage.put("demo_items", updatedItems);
-      return updatedItems;
+    async addMemory(entry: MemoryEntry): Promise<MemoryEntry[]> {
+      const memories = await this.getMemories();
+      const updated = [entry, ...memories];
+      await this.ctx.storage.put("memories", updated);
+      return updated;
     }
-
-    async updateDemoItem(id: string, updates: Partial<Omit<DemoItem, 'id'>>): Promise<DemoItem[]> {
-      const items = await this.getDemoItems();
-      const updatedItems = items.map(item => 
-        item.id === id ? { ...item, ...updates } : item
-      );
-      await this.ctx.storage.put("demo_items", updatedItems);
-      return updatedItems;
+    // Template boilerplate compatibility
+    async getCounterValue(): Promise<number> {
+      return (await this.ctx.storage.get("counter_value")) || 0;
     }
-
-    async deleteDemoItem(id: string): Promise<DemoItem[]> {
-      const items = await this.getDemoItems();
-      const updatedItems = items.filter(item => item.id !== id);
-      await this.ctx.storage.put("demo_items", updatedItems);
-      return updatedItems;
+    async increment(): Promise<number> {
+      let v: number = (await this.ctx.storage.get("counter_value")) || 0;
+      v++;
+      await this.ctx.storage.put("counter_value", v);
+      return v;
     }
+    async getDemoItems(): Promise<DemoItem[]> { return []; }
+    async addDemoItem(item: any) { return []; }
+    async updateDemoItem(id: string, updates: any) { return []; }
+    async deleteDemoItem(id: string) { return []; }
 }
