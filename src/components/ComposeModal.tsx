@@ -51,6 +51,10 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   useEffect(() => {
     if (isOpen) {
       resetForm();
+    } else {
+      // Cleanup: ensure uploading states are cleared if modal closes
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   }, [isOpen, resetForm]);
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,8 +70,8 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     formData.append('file', file);
     formData.append('type', type);
     const interval = setInterval(() => {
-      setUploadProgress(prev => (prev < 90 ? prev + 5 : prev));
-    }, 300);
+      setUploadProgress(prev => (prev < 90 ? prev + 2 : prev));
+    }, 200);
     try {
       const res = await fetch('/api/memories/upload', {
         method: 'POST',
@@ -90,7 +94,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       setTimeout(() => {
         setIsUploading(false);
         setUploadProgress(0);
-      }, 800);
+      }, 500);
     }
   };
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,10 +105,11 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       return;
     }
     setIsSubmitting(true);
-    const entryData = {
-      content,
+    // Data Integrity: strictly clean the payload
+    const entryData: Omit<MemoryEntry, 'id'> = {
+      content: content.trim(),
       type,
-      mediaUrl: mediaUrl || undefined,
+      mediaUrl: type === 'text' ? undefined : (mediaUrl || undefined),
       date: date
     };
     try {
@@ -141,19 +146,19 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 pt-4">
           <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-              <Calendar className="w-3 h-3" /> When did this happen?
+            <Label className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-2 font-bold">
+              <Calendar className="w-3 h-3" /> Genesis of this Moment
             </Label>
             <Input
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="bg-white rounded-xl border-peach/10 focus:ring-peach/30 font-serif"
+              className="bg-white rounded-xl border-peach/10 focus:ring-peach/30 font-serif h-12"
               required
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">The Thought</Label>
+            <Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">The Narrative</Label>
             <Textarea
               placeholder="A whisper, a shout, a silent look..."
               className="min-h-[140px] bg-white rounded-2xl border-peach/10 focus:ring-peach/30 resize-none font-serif text-lg p-5 leading-relaxed shadow-inner placeholder:text-peach/30"
@@ -163,7 +168,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
             />
           </div>
           <div className="space-y-3">
-            <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">Format</Label>
+            <Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Medium</Label>
             <div className="grid grid-cols-4 gap-2">
               {[
                 { id: 'text', label: 'Letter', icon: Type },
@@ -178,11 +183,14 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                   size="sm"
                   className={cn(
                     "flex flex-col gap-1.5 h-auto py-3 rounded-2xl transition-all border-peach/10",
-                    type === item.id 
-                      ? "bg-peach hover:bg-peach-dark shadow-[0_4px_12px_rgba(255,154,158,0.3)] text-white" 
+                    type === item.id
+                      ? "bg-peach hover:bg-peach-dark shadow-[0_4px_12px_rgba(255,154,158,0.3)] text-white"
                       : "hover:border-peach/30 bg-white"
                   )}
-                  onClick={() => setType(item.id as MemoryType)}
+                  onClick={() => {
+                    setType(item.id as MemoryType);
+                    if (item.id === 'text') setMediaUrl('');
+                  }}
                 >
                   <item.icon className="w-4 h-4" />
                   <span className="text-[10px] font-bold tracking-tight">{item.label}</span>
@@ -199,14 +207,15 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                     "border-2 border-dashed rounded-[2rem] p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all",
                     isUploading ? "bg-peach/5 border-peach/30" : "hover:bg-peach/5 border-peach/10 bg-white"
                   )}
+                  aria-label={`Upload ${type} file`}
                 >
                   <Upload className={cn("w-8 h-8", isUploading ? "text-peach animate-bounce" : "text-peach/40")} />
                   <div className="text-center">
                     <p className="text-sm font-bold text-foreground/80">
-                      {isUploading ? "Preserving..." : mediaUrl ? "Replace File" : `Upload ${type}`}
+                      {isUploading ? "Preserving..." : mediaUrl ? "Replace Preservation" : `Preserve ${type}`}
                     </p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
-                      Max size: 100MB
+                      Max: 100MB
                     </p>
                   </div>
                   <input
@@ -218,7 +227,12 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                     disabled={isUploading}
                   />
                 </div>
-                {isUploading && <Progress value={uploadProgress} className="h-1 bg-peach/10" />}
+                {isUploading && <Progress value={uploadProgress} className="h-1.5 bg-peach/10" />}
+                {mediaUrl && !isUploading && (
+                  <p className="text-[9px] text-center text-peach/60 uppercase tracking-[0.2em] font-bold">
+                    Media Linked Successfully
+                  </p>
+                )}
               </div>
               {!isUploading && (
                 <div className="space-y-4">
@@ -228,17 +242,17 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                     </div>
                     <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
                       <span
-                        className="bg-warm-white px-3 text-muted-foreground cursor-pointer hover:text-peach transition-colors flex items-center gap-1"
+                        className="bg-warm-white px-3 text-muted-foreground cursor-pointer hover:text-peach transition-colors flex items-center gap-1 font-bold"
                         onClick={() => setShowUrlInput(!showUrlInput)}
                       >
-                        <LinkIcon className="w-3 h-3" /> {showUrlInput ? "Hide Link Option" : "Or use a link instead"}
+                        <LinkIcon className="w-3 h-3" /> {showUrlInput ? "Collapse Link Input" : "Provide External Link"}
                       </span>
                     </div>
                   </div>
                   {showUrlInput && (
                     <Input
-                      placeholder={`Paste ${type} URL here...`}
-                      className="bg-white rounded-xl border-peach/10 focus:ring-peach/30 h-12 shadow-sm"
+                      placeholder={`Direct URL to ${type}...`}
+                      className="bg-white rounded-xl border-peach/10 focus:ring-peach/30 h-12 shadow-sm font-sans"
                       value={mediaUrl}
                       onChange={(e) => setMediaUrl(e.target.value)}
                     />
@@ -249,10 +263,10 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
           )}
           <Button
             type="submit"
-            className="w-full py-7 rounded-2xl bg-peach hover:bg-peach-dark text-white font-serif text-xl shadow-xl hover:shadow-peach/30 transition-all duration-500 disabled:opacity-50"
+            className="w-full py-8 rounded-2xl bg-peach hover:bg-peach-dark text-white font-serif text-xl shadow-xl hover:shadow-peach/30 transition-all duration-500 disabled:opacity-50 mt-4"
             disabled={isSubmitting || isUploading || !content.trim()}
           >
-            {isSubmitting ? "Preserving..." : "Seal with Love"}
+            {isSubmitting ? "Preserving..." : "Seal in Archive"}
           </Button>
         </form>
       </DialogContent>
