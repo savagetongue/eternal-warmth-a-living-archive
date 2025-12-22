@@ -1,5 +1,5 @@
 import React, { forwardRef, useMemo, useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { format, parseISO, isValid } from 'date-fns';
 import { Quote, Pencil, Trash2, Music, Loader2, ImageIcon, Video } from 'lucide-react';
 import type { MemoryEntry } from '@shared/types';
@@ -40,7 +40,6 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       if (res.ok) { toast.success("Memory returned to the stars."); onDelete?.(); }
     } catch { toast.error("Could not reach the archive."); }
   };
-  const MediaIcon = memory.type === 'video' ? Video : memory.type === 'audio' ? Music : ImageIcon;
   return (
     <motion.div
       ref={ref} layout
@@ -58,29 +57,34 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       </div>
       <div className="mb-8 flex items-center gap-3">
         <div className="h-px flex-1 bg-peach/10" />
-        <span className="text-[10px] font-serif italic text-muted-foreground tracking-[0.4em] uppercase whitespace-nowrap">{formattedDate}</span>
+        <span className="text-[10px] font-serif italic text-muted-foreground tracking-[0.4em] uppercase whitespace-nowrap tabular-nums">{formattedDate}</span>
         <div className="h-px flex-1 bg-peach/10" />
       </div>
       {memory.type === 'video' && (
         <div className="space-y-8">
-          <div className="relative overflow-hidden rounded-[2rem] aspect-video w-full bg-black border-4 border-warm-paper dark:border-zinc-900 shadow-inner">
+          <div className="relative overflow-hidden rounded-[2rem] aspect-video w-full bg-black border-4 border-warm-paper dark:border-zinc-900 shadow-inner" style={{ backgroundColor: fallbackColor }}>
+            {memory.previewUrl && (
+              <div className="absolute inset-0 z-0">
+                <img src={memory.previewUrl} className="w-full h-full object-cover blur-2xl opacity-40" alt="" />
+              </div>
+            )}
             <video
               src={memory.mediaUrl}
               poster={memory.previewUrl}
               controls
-              className={cn("w-full h-full object-contain transition-opacity duration-1000", isMediaLoading ? "opacity-0" : "opacity-100")}
+              className={cn("relative z-10 w-full h-full object-contain transition-opacity duration-1000", isMediaLoading ? "opacity-0" : "opacity-100")}
               onLoadedData={() => setIsMediaLoading(false)}
               onError={() => { setIsMediaLoading(false); setHasError(true); }}
             />
             {isMediaLoading && !hasError && (
-              <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
+              <div className="absolute inset-0 z-20 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 text-peach animate-spin" />
               </div>
             )}
             {hasError && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900">
-                <Video className="w-12 h-12 text-peach/20 mb-2" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-peach/40">Visual Essence Archived</span>
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-zinc-900/60 backdrop-blur-sm">
+                <Video className="w-12 h-12 text-peach/40 mb-2" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-peach/40">Visual Echo Archived</span>
               </div>
             )}
           </div>
@@ -90,14 +94,19 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       {memory.type === 'image' && (
         <div className="space-y-8">
           <div className="relative overflow-hidden rounded-[2rem] aspect-video w-full border-4 border-warm-paper dark:border-zinc-900" style={{ backgroundColor: fallbackColor }}>
+            {memory.previewUrl && (
+              <div className="absolute inset-0 z-0">
+                <img src={memory.previewUrl} className="w-full h-full object-cover blur-2xl opacity-40" alt="" />
+              </div>
+            )}
             {memory.mediaUrl && !hasError && (
               <img
-                src={memory.mediaUrl} alt="Archive" className={cn("w-full h-full object-contain transition-opacity duration-1000", isMediaLoading ? "opacity-0" : "opacity-100")}
+                src={memory.mediaUrl} alt="Archive" className={cn("relative z-10 w-full h-full object-contain transition-opacity duration-1000", isMediaLoading ? "opacity-0" : "opacity-100")}
                 onLoad={() => setIsMediaLoading(false)} onError={() => { setIsMediaLoading(false); setHasError(true); }}
               />
             )}
-            {isMediaLoading && !hasError && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-8 h-8 text-peach animate-spin" /></div>}
-            {hasError && <div className="absolute inset-0 flex items-center justify-center"><ImageIcon className="w-12 h-12 text-peach/20" /></div>}
+            {isMediaLoading && !hasError && <div className="absolute inset-0 z-20 flex items-center justify-center"><Loader2 className="w-8 h-8 text-peach animate-spin" /></div>}
+            {hasError && <div className="absolute inset-0 z-20 flex items-center justify-center"><ImageIcon className="w-12 h-12 text-peach/40" /></div>}
           </div>
           <p className="text-xl md:text-3xl font-serif italic text-center text-foreground/90 whitespace-pre-wrap break-words px-4">"{memory.content}"</p>
         </div>

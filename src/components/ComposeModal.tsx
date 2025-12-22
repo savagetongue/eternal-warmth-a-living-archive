@@ -29,6 +29,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const [livePreviewUrl, setLivePreviewUrl] = useState('');
   const [dominantColor, setDominantColor] = useState('');
   const [currentFileName, setCurrentFileName] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -111,6 +112,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const resetForm = useCallback(() => {
     cleanupObjectUrls();
     setLivePreviewUrl('');
+    setSelectedFile(null);
     if (initialData) {
       setContent(initialData.content);
       setType(initialData.type);
@@ -136,6 +138,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setSelectedFile(file);
     setCurrentFileName(file.name);
     setIsProcessing(true);
     setSignatureCaptured(false);
@@ -144,7 +147,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       setLivePreviewUrl(blobUrl);
       setPreviewUrl(base64Thumb);
       setDominantColor(color);
-      setType(autoType); // Automatically set detected type
+      setType(autoType);
       setSignatureCaptured(true);
       toast.success(`${autoType.charAt(0).toUpperCase() + autoType.slice(1)} signature captured.`);
     } catch (err) {
@@ -157,18 +160,33 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     e.preventDefault();
     if (!content.trim()) return;
     setIsSubmitting(true);
-    const newId = initialData?.id || uuidv4();
-    const entryData: MemoryEntry = {
-      id: newId,
-      content: content.trim(),
-      type,
-      mediaUrl: type === 'text' ? undefined : (mediaUrl || undefined),
-      previewUrl: type === 'text' ? undefined : (previewUrl || undefined),
-      dominantColor: type === 'text' ? undefined : (dominantColor || undefined),
-      fileName: type === 'text' ? undefined : (currentFileName || undefined),
-      date: date
-    };
+    let finalMediaUrl = mediaUrl;
     try {
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        const uploadRes = await fetch('/api/memories/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        const uploadJson = await uploadRes.json();
+        if (uploadJson.success && uploadJson.data?.url) {
+          finalMediaUrl = uploadJson.data.url;
+        } else {
+          toast.warning("Media upload failed, using fallback/link.");
+        }
+      }
+      const newId = initialData?.id || uuidv4();
+      const entryData: MemoryEntry = {
+        id: newId,
+        content: content.trim(),
+        type,
+        mediaUrl: type === 'text' ? undefined : (finalMediaUrl || undefined),
+        previewUrl: type === 'text' ? undefined : (previewUrl || undefined),
+        dominantColor: type === 'text' ? undefined : (dominantColor || undefined),
+        fileName: type === 'text' ? undefined : (currentFileName || undefined),
+        date: date
+      };
       const res = await fetch(initialData ? `/api/memories/${initialData.id}` : '/api/memories', {
         method: initialData ? 'PUT' : 'POST',
         body: JSON.stringify(entryData),
@@ -179,9 +197,12 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
         toast.success("Archive updated.");
         onOpenChange(false);
         onSuccess();
+      } else {
+        throw new Error("Archive write failed");
       }
     } catch (err) {
       toast.error("Connection lost to the archive.");
+      console.error(err);
     } finally {
       setIsSubmitting(false);
     }

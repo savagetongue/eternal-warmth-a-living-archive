@@ -37,16 +37,16 @@ export function TimeKeeper() {
       <div className="flex flex-row flex-wrap justify-center items-center gap-x-4 sm:gap-x-8 lg:gap-x-12 gap-y-8 sm:gap-y-12 max-w-7xl p-4 sm:p-8 w-full">
         {displayUnits.map((unit) => (
           <div key={unit.label} className="flex flex-col items-center flex-shrink-0">
-            <div className="relative overflow-visible h-16 sm:h-24 lg:h-36 flex items-center justify-center min-w-[2ch]">
+            <div className="relative overflow-visible h-16 sm:h-24 lg:h-36 flex items-center justify-center min-w-[2.2ch]">
               <div className="relative flex items-center justify-center tabular-nums overflow-visible">
                 <AnimatePresence mode="popLayout" initial={false}>
                   <motion.span
                     key={unit.value}
-                    initial={{ y: 20, opacity: 0, scale: 0.9, filter: "blur(4px)" }}
+                    initial={{ y: 15, opacity: 0, scale: 0.95, filter: "blur(2px)" }}
                     animate={{ y: 0, opacity: 1, scale: 1, filter: "blur(0px)" }}
-                    exit={{ y: -20, opacity: 0, scale: 0.9, filter: "blur(4px)" }}
+                    exit={{ y: -15, opacity: 0, scale: 0.95, filter: "blur(2px)" }}
                     transition={{
-                      duration: 0.6,
+                      duration: 0.4,
                       ease: [0.34, 1.56, 0.64, 1],
                     }}
                     className="text-4xl sm:text-6xl lg:text-9xl font-mono font-black text-foreground tabular-nums tracking-[-0.05em] select-none whitespace-nowrap will-change-transform flex justify-center items-center w-[2ch]"

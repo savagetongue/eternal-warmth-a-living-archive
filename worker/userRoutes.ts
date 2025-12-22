@@ -18,8 +18,8 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
         return c.json({ success: true, data } satisfies ApiResponse<MemoryEntry[]>);
     });
     app.get('/api/media/:type/:filename', async (c) => {
-        const type = c.req.param('type');
         const filename = c.req.param('filename');
+        const type = c.req.param('type');
         const key = `${type}/${filename}`;
         if (!c.env.MEMORIES_BUCKET) {
             return c.json({ success: false, error: 'Storage not configured' }, 503);
@@ -33,10 +33,19 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
         headers.set('etag', object.httpEtag);
         headers.set('Cache-Control', 'public, max-age=31536000, immutable');
         headers.set('Content-Length', object.size.toString());
-        // Ensure proper mime types for specific extensions
         const ext = filename.split('.').pop()?.toLowerCase();
-        if (ext === 'mp4') headers.set('Content-Type', 'video/mp4');
-        if (ext === 'mp3') headers.set('Content-Type', 'audio/mpeg');
+        const mimeMap: Record<string, string> = {
+            'mp4': 'video/mp4',
+            'mp3': 'audio/mpeg',
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'webp': 'image/webp',
+            'gif': 'image/gif'
+        };
+        if (ext && mimeMap[ext]) {
+            headers.set('Content-Type', mimeMap[ext]);
+        }
         return new Response(object.body as any, {
             headers: headers as any
         });
@@ -53,23 +62,21 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
             const isAudio = file.type.startsWith('audio/');
             const uuid = crypto.randomUUID();
             const filename = `${uuid}.${extension}`;
-            const type = isVideo ? 'video' : isAudio ? 'audio' : 'media';
+            const type = isVideo ? 'video' : isAudio ? 'audio' : 'image';
             const key = `${type}/${filename}`;
             let uploadUrl = '';
-            let uploadKey = '';
             if (c.env.MEMORIES_BUCKET) {
                 await c.env.MEMORIES_BUCKET.put(key, await file.arrayBuffer(), {
                     httpMetadata: { contentType: file.type }
                 });
-                uploadKey = key;
                 uploadUrl = `/api/media/${type}/${filename}`;
             } else {
-                // Production-grade fallback placeholders
+                // Production-grade fallback placeholders if bucket missing
                 if (isVideo) uploadUrl = 'https://assets.mixkit.co/videos/preview/mixkit-clouds-moving-fast-during-a-sunset-173-large.mp4';
                 else if (isAudio) uploadUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
                 else uploadUrl = 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&q=80&w=800';
             }
-            return c.json({ success: true, data: { url: uploadUrl, key: uploadKey } });
+            return c.json({ success: true, data: { url: uploadUrl } });
         } catch (err) {
             console.error('[UPLOAD ERROR]', err);
             return c.json({ success: false, error: 'Internal upload failure' }, 500);
