@@ -31,13 +31,11 @@ export class GlobalDurableObject extends DurableObject {
           if (!rest.date) {
             rest.date = new Date().toISOString().split('T')[0];
           }
-          // Migration: Ensure legacy memories have a default dominant color if not present
-          if (rest.type !== 'text' && !rest.dominantColor) {
-            rest.dominantColor = '#F9F3E5';
+          if (rest.type !== 'text' && (!rest.dominantColor || !rest.dominantColor.startsWith('#'))) {
+            rest.dominantColor = '#FDFBF7';
           }
           return rest;
         });
-        // Sort ascending: Oldest memories first
         cleaned.sort((a, b) => a.date.localeCompare(b.date));
         return cleaned as MemoryEntry[];
       }
@@ -48,7 +46,6 @@ export class GlobalDurableObject extends DurableObject {
     async addMemory(entry: MemoryEntry): Promise<MemoryEntry[]> {
       const memories = await this.getMemories();
       const updated = [...memories, entry];
-      // Sort ascending to maintain chronological growth
       updated.sort((a, b) => a.date.localeCompare(b.date));
       await this.ctx.storage.put("memories", updated);
       return updated;
@@ -58,7 +55,6 @@ export class GlobalDurableObject extends DurableObject {
       const index = memories.findIndex(m => m.id === id);
       if (index !== -1) {
         memories[index] = { ...memories[index], ...updates };
-        // Re-sort after potential date update to keep chronological order
         memories.sort((a, b) => a.date.localeCompare(b.date));
         await this.ctx.storage.put("memories", memories);
       }
