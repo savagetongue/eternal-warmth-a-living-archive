@@ -51,9 +51,9 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     if (!ctx) return '#FDFBF7';
     ctx.drawImage(img, 0, 0, 1, 1);
     try {
-      const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+      const data = ctx.getImageData(0, 0, 1, 1).data;
       const toHex = (c: number) => c.toString(16).padStart(2, '0');
-      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+      return `#${toHex(data[0])}${toHex(data[1])}${toHex(data[2])}`;
     } catch (e) {
       return '#FDFBF7';
     }
@@ -62,7 +62,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     const canvas = document.createElement('canvas');
     const sourceWidth = (source as any).naturalWidth || (source as any).videoWidth || source.width;
     const sourceHeight = (source as any).naturalHeight || (source as any).videoHeight || source.height;
-    const targetWidth = Math.min(400, sourceWidth); // Reduced from 600
+    const targetWidth = Math.min(400, sourceWidth);
     const scaleFactor = targetWidth / sourceWidth;
     const targetHeight = Math.floor(sourceHeight * scaleFactor);
     canvas.width = targetWidth;
@@ -72,57 +72,45 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'medium';
     ctx.drawImage(source, 0, 0, targetWidth, targetHeight);
-    return canvas.toDataURL('image/jpeg', 0.4); // Reduced from 0.6
+    return canvas.toDataURL('image/jpeg', 0.4);
   };
-  const generateSignature = (file: File): Promise<{ blobUrl: string; base64Thumb: string; color: string }> => {
+  const generateSignature = (file: File): Promise<{ blobUrl: string; base64Thumb: string; color: string; autoType: MemoryType }> => {
     return new Promise((resolve) => {
       const objectUrl = URL.createObjectURL(file);
       objectUrlsRef.current.push(objectUrl);
-      const fallbackColor = file.type.startsWith('video/') ? '#A1C4FD' : '#FF9A9E';
+      const isVideo = file.type.startsWith('video/');
+      const isAudio = file.type.startsWith('audio/');
+      const autoType: MemoryType = isVideo ? 'video' : isAudio ? 'audio' : 'image';
+      const fallbackColor = isVideo ? '#A1C4FD' : '#FF9A9E';
       if (file.type.startsWith('image/')) {
         const img = new Image();
-        const timeout = setTimeout(() => resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor }), 5000);
+        const timeout = setTimeout(() => resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor, autoType }), 5000);
         img.onload = () => {
           clearTimeout(timeout);
-          const color = extractDominantColor(img);
-          const base64Thumb = generateThumbnailFromSource(img);
-          resolve({ blobUrl: objectUrl, base64Thumb, color });
+          resolve({ blobUrl: objectUrl, base64Thumb: generateThumbnailFromSource(img), color: extractDominantColor(img), autoType });
         };
-        img.onerror = () => {
-          clearTimeout(timeout);
-          resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor });
-        };
+        img.onerror = () => { clearTimeout(timeout); resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor, autoType }); };
         img.src = objectUrl;
-      } else if (file.type.startsWith('video/')) {
+      } else if (isVideo) {
         const video = document.createElement('video');
         video.preload = 'metadata';
         video.muted = true;
-        video.playsInline = true;
-        const timeout = setTimeout(() => resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor }), 10000);
-        video.onloadedmetadata = () => {
-          video.currentTime = 0.5;
-        };
+        const timeout = setTimeout(() => resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor, autoType }), 10000);
+        video.onloadedmetadata = () => { video.currentTime = 0.5; };
         video.onseeked = () => {
           clearTimeout(timeout);
-          const base64Thumb = generateThumbnailFromSource(video);
-          const color = extractDominantColor(video as any);
-          resolve({ blobUrl: objectUrl, base64Thumb, color });
-          video.remove();
-        };
-        video.onerror = () => {
-          clearTimeout(timeout);
-          resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor });
+          resolve({ blobUrl: objectUrl, base64Thumb: generateThumbnailFromSource(video), color: extractDominantColor(video as any), autoType });
           video.remove();
         };
         video.src = objectUrl;
       } else {
-        resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor });
+        resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor, autoType });
       }
     });
   };
   const resetForm = useCallback(() => {
     cleanupObjectUrls();
-    setLivePreviewUrl(''); // Force clear previous blob refs
+    setLivePreviewUrl('');
     if (initialData) {
       setContent(initialData.content);
       setType(initialData.type);
@@ -144,11 +132,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     }
     setIsProcessing(false);
   }, [initialData, cleanupObjectUrls]);
-  useEffect(() => {
-    if (isOpen) {
-      resetForm();
-    }
-  }, [isOpen, resetForm]);
+  useEffect(() => { if (isOpen) resetForm(); }, [isOpen, resetForm]);
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -156,12 +140,13 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     setIsProcessing(true);
     setSignatureCaptured(false);
     try {
-      const { blobUrl, base64Thumb, color } = await generateSignature(file);
+      const { blobUrl, base64Thumb, color, autoType } = await generateSignature(file);
       setLivePreviewUrl(blobUrl);
       setPreviewUrl(base64Thumb);
       setDominantColor(color);
+      setType(autoType); // Automatically set detected type
       setSignatureCaptured(true);
-      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} signature captured.`);
+      toast.success(`${autoType.charAt(0).toUpperCase() + autoType.slice(1)} signature captured.`);
     } catch (err) {
       toast.error("Failed to process local preview.");
     } finally {
@@ -184,16 +169,14 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       date: date
     };
     try {
-      const url = initialData ? `/api/memories/${initialData.id}` : '/api/memories';
-      const method = initialData ? 'PUT' : 'POST';
-      const res = await fetch(url, {
-        method,
+      const res = await fetch(initialData ? `/api/memories/${initialData.id}` : '/api/memories', {
+        method: initialData ? 'PUT' : 'POST',
         body: JSON.stringify(entryData),
         headers: { 'Content-Type': 'application/json' }
       });
       if (res.ok) {
         localStorage.setItem('recent_memory_id', newId);
-        toast.success(initialData ? "Memory refined." : "Memory archived.");
+        toast.success("Archive updated.");
         onOpenChange(false);
         onSuccess();
       }
@@ -211,140 +194,43 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
             <Feather className="w-5 h-5 text-peach" />
             {initialData ? 'Refining a Memory' : 'Pen a New Memory'}
           </DialogTitle>
-          <DialogDescription className="text-muted-foreground italic">
-            Threads in the tapestry of our shared journey.
-          </DialogDescription>
+          <DialogDescription className="text-muted-foreground italic">Threads in our shared journey.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 pt-4">
           <div className="space-y-2">
             <Label className="text-[10px] uppercase tracking-widest text-muted-foreground flex items-center gap-2 font-bold">
               <Calendar className="w-3 h-3" /> Genesis of this Moment
             </Label>
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="bg-white rounded-xl border-peach/10 focus:ring-peach/30 font-serif h-12"
-              required
-            />
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="bg-white rounded-xl border-peach/10 h-12" required />
           </div>
           <div className="space-y-2">
-            <div className="flex justify-between items-end">
-              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">The Narrative</Label>
-              <span className={cn("text-[9px] font-bold tracking-widest", content.length > 500 ? "text-red-400" : "text-peach/40")}>
-                {content.length} CHARS
-              </span>
-            </div>
-            <Textarea
-              placeholder="A whisper, a shout, a silent look..."
-              className="min-h-[140px] bg-white rounded-2xl border-peach/10 focus:ring-peach/30 resize-none font-serif text-lg p-5 leading-relaxed shadow-inner placeholder:text-peach/30"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              required
-            />
+            <Textarea placeholder="The narrative..." className="min-h-[140px] bg-white rounded-2xl border-peach/10 font-serif text-lg p-5 leading-relaxed shadow-inner" value={content} onChange={(e) => setContent(e.target.value)} required />
           </div>
           <div className="space-y-3">
             <Label className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Medium</Label>
             <div className="grid grid-cols-4 gap-2">
-              {[
-                { id: 'text', label: 'Letter', icon: Type },
-                { id: 'image', label: 'Photo', icon: ImageIcon },
-                { id: 'video', label: 'Video', icon: Video },
-                { id: 'audio', label: 'Audio', icon: Music },
-              ].map((item) => (
-                <Button
-                  key={item.id}
-                  type="button"
-                  variant={type === item.id ? 'default' : 'outline'}
-                  size="sm"
-                  className={cn(
-                    "flex flex-col gap-1.5 h-auto py-3 rounded-2xl transition-all border-peach/10",
-                    type === item.id
-                      ? "bg-peach hover:bg-peach-dark shadow-[0_4px_12px_rgba(255,154,158,0.3)] text-white"
-                      : "hover:border-peach/30 bg-white"
-                  )}
-                  onClick={() => { setType(item.id as MemoryType); setSignatureCaptured(false); }}
-                >
+              {[ { id: 'text', label: 'Letter', icon: Type }, { id: 'image', label: 'Photo', icon: ImageIcon }, { id: 'video', label: 'Video', icon: Video }, { id: 'audio', label: 'Audio', icon: Music } ].map((item) => (
+                <Button key={item.id} type="button" variant={type === item.id ? 'default' : 'outline'} className={cn("flex flex-col gap-1.5 h-auto py-3 rounded-2xl", type === item.id ? "bg-peach text-white" : "bg-white border-peach/10")} onClick={() => setType(item.id as MemoryType)}>
                   <item.icon className="w-4 h-4" />
-                  <span className="text-[10px] font-bold tracking-tight">{item.label}</span>
+                  <span className="text-[10px] font-bold">{item.label}</span>
                 </Button>
               ))}
             </div>
           </div>
           {type !== 'text' && (
-            <div className="space-y-5 animate-in fade-in slide-in-from-top-2">
+            <div className="space-y-5">
               <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-peach font-black flex items-center gap-2">
-                  <LinkIcon className="w-3 h-3" /> Permanent Source (URL)
-                </Label>
-                <Input
-                  placeholder={`Direct URL to ${type}...`}
-                  className="bg-white rounded-xl border-peach/20 focus:ring-peach/30 h-12 shadow-sm font-sans"
-                  value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
-                />
-                <div className="flex gap-2 p-3 bg-peach/5 rounded-lg border border-peach/10">
-                  <Info className="w-4 h-4 text-peach flex-shrink-0 mt-0.5" />
-                  <p className="text-[10px] text-muted-foreground leading-tight">
-                    Cloud storage is restricted. For permanent high-res display, please provide a direct URL from a host.
-                  </p>
-                </div>
+                <Input placeholder={`Direct URL to ${type}...`} className="bg-white rounded-xl border-peach/20 h-12" value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} />
+                <div className="flex gap-2 p-3 bg-peach/5 rounded-lg border border-peach/10"><Info className="w-4 h-4 text-peach" /><p className="text-[10px] text-muted-foreground">URL ensures permanent high-res display.</p></div>
               </div>
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-peach/10" />
-                </div>
-                <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
-                  <span className="bg-warm-white px-3 text-muted-foreground font-bold">Or capture visual signature</span>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div
-                  onClick={() => !isProcessing && fileInputRef.current?.click()}
-                  className={cn(
-                    "relative border-2 border-dashed rounded-[2rem] p-6 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden min-h-[140px]",
-                    signatureCaptured ? "border-green-200 bg-green-50/30" : (isProcessing ? "border-peach/30 bg-peach/5" : "hover:bg-peach/5 border-peach/10 bg-white")
-                  )}
-                >
-                  {(livePreviewUrl || previewUrl) && !isProcessing && (
-                    <div className="absolute inset-0 z-0">
-                       <img src={previewUrl || livePreviewUrl} className="w-full h-full object-cover opacity-10" alt="Preview" />
-                    </div>
-                  )}
-                  {isProcessing ? (
-                    <Loader2 className="w-6 h-6 text-peach animate-spin relative z-10" />
-                  ) : signatureCaptured ? (
-                    <CheckCircle2 className="w-6 h-6 text-green-500 relative z-10" />
-                  ) : (
-                    <Upload className="w-6 h-6 text-peach/40 relative z-10" />
-                  )}
-                  <div className="text-center relative z-10">
-                    <p className="text-xs font-bold text-foreground/80">
-                      {isProcessing ? "Extracting Essence..." : signatureCaptured ? "Signature Captured" : `Select ${type} for signature`}
-                    </p>
-                    {currentFileName && (
-                      <p className="text-[9px] text-muted-foreground uppercase tracking-widest mt-1 truncate max-w-[150px]">
-                        {currentFileName}
-                      </p>
-                    )}
-                  </div>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept={type === 'audio' ? 'audio/*' : type === 'video' ? 'video/*' : 'image/*'}
-                    onChange={handleFileChange}
-                    disabled={isProcessing}
-                  />
-                </div>
+              <div onClick={() => !isProcessing && fileInputRef.current?.click()} className={cn("relative border-2 border-dashed rounded-[2rem] p-6 flex flex-col items-center justify-center gap-3 cursor-pointer", signatureCaptured ? "border-green-200 bg-green-50/30" : "bg-white border-peach/10")}>
+                {isProcessing ? <Loader2 className="w-6 h-6 text-peach animate-spin" /> : signatureCaptured ? <CheckCircle2 className="w-6 h-6 text-green-500" /> : <Upload className="w-6 h-6 text-peach/40" />}
+                <p className="text-xs font-bold text-foreground/80">{isProcessing ? "Processing..." : signatureCaptured ? "Signature Captured" : `Select ${type} for signature`}</p>
+                <input type="file" ref={fileInputRef} className="hidden" accept={type === 'audio' ? 'audio/*' : type === 'video' ? 'video/*' : 'image/*'} onChange={handleFileChange} disabled={isProcessing} />
               </div>
             </div>
           )}
-          <Button
-            type="submit"
-            className="w-full py-8 rounded-2xl bg-peach hover:bg-peach-dark text-white font-serif text-xl shadow-xl hover:shadow-peach/30 transition-all duration-500 disabled:opacity-50 mt-4"
-            disabled={isSubmitting || isProcessing || !content.trim()}
-          >
+          <Button type="submit" className="w-full py-8 rounded-2xl bg-peach hover:bg-peach-dark text-white font-serif text-xl shadow-xl" disabled={isSubmitting || isProcessing || !content.trim()}>
             {isSubmitting ? "Preserving..." : "Seal in Archive"}
           </Button>
         </form>
