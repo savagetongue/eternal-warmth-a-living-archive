@@ -27,49 +27,71 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const [type, setType] = useState<MemoryType>('text');
   const [mediaUrl, setMediaUrl] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
+  const [dominantColor, setDominantColor] = useState('');
+  const [currentFileName, setCurrentFileName] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const generateThumbnail = (file: File): Promise<string> => {
+  const extractDominantColor = (img: HTMLImageElement): string => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '#F9F3E5';
+    ctx.drawImage(img, 0, 0, 1, 1);
+    const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+  const generateVisualSignature = (file: File): Promise<{ preview: string; color: string }> => {
     return new Promise((resolve) => {
-      if (!file.type.startsWith('image/')) {
+      if (file.type.startsWith('image/')) {
         const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 400;
-          const MAX_HEIGHT = 300;
-          let width = img.width;
-          let height = img.height;
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const color = extractDominantColor(img);
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 400;
+            const MAX_HEIGHT = 300;
+            let width = img.width;
+            let height = img.height;
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
             }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.7));
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            resolve({ 
+              preview: canvas.toDataURL('image/jpeg', 0.7), 
+              color 
+            });
+          };
+          img.src = e.target?.result as string;
         };
-        img.src = e.target?.result as string;
-      };
-      reader.readAsDataURL(file);
+        reader.readAsDataURL(file);
+      } else {
+        // For Audio/Video, generate a themed pastel HSL color
+        const hash = file.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const hue = file.type.startsWith('video/') ? (210 + (hash % 40)) : (350 + (hash % 20)); // Mist or Peach hue range
+        const color = `hsl(${hue}, 70%, 90%)`;
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve({ preview: reader.result as string, color });
+        };
+        reader.readAsDataURL(file);
+      }
     });
   };
   const resetForm = useCallback(() => {
@@ -78,12 +100,16 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       setType(initialData.type);
       setMediaUrl(initialData.mediaUrl || '');
       setPreviewUrl(initialData.previewUrl || '');
+      setDominantColor(initialData.dominantColor || '');
+      setCurrentFileName(initialData.fileName || '');
       setDate(initialData.date);
     } else {
       setContent('');
       setType('text');
       setMediaUrl('');
       setPreviewUrl('');
+      setDominantColor('');
+      setCurrentFileName('');
       setDate(new Date().toISOString().split('T')[0]);
     }
     setUploadProgress(0);
@@ -93,9 +119,6 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   useEffect(() => {
     if (isOpen) {
       resetForm();
-    } else {
-      setIsUploading(false);
-      setUploadProgress(0);
     }
   }, [isOpen, resetForm]);
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,11 +128,12 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       toast.error("File is too heavy (Max 100MB)");
       return;
     }
-    // Immediate local preview
-    const localPreview = await generateThumbnail(file);
-    setPreviewUrl(localPreview);
+    setCurrentFileName(file.name);
     setIsUploading(true);
-    setUploadProgress(10);
+    setUploadProgress(5);
+    const { preview, color } = await generateVisualSignature(file);
+    setPreviewUrl(preview);
+    setDominantColor(color);
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', type);
@@ -132,7 +156,6 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       }
     } catch (err) {
       toast.warning("Server preservation pending. Using local copy for now.");
-      console.error(err);
     } finally {
       clearInterval(interval);
       setTimeout(() => {
@@ -154,6 +177,8 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       type,
       mediaUrl: type === 'text' ? undefined : (mediaUrl || undefined),
       previewUrl: type === 'text' ? undefined : (previewUrl || undefined),
+      dominantColor: type === 'text' ? undefined : (dominantColor || undefined),
+      fileName: type === 'text' ? undefined : (currentFileName || undefined),
       date: date
     };
     try {
@@ -236,6 +261,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                     if (item.id === 'text') {
                       setMediaUrl('');
                       setPreviewUrl('');
+                      setDominantColor('');
                     }
                   }}
                 >
@@ -252,8 +278,9 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                   onClick={() => !isUploading && fileInputRef.current?.click()}
                   className={cn(
                     "relative border-2 border-dashed rounded-[2rem] p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden",
-                    isUploading ? "bg-peach/5 border-peach/30" : "hover:bg-peach/5 border-peach/10 bg-white"
+                    isUploading ? "border-peach/30" : "hover:bg-peach/5 border-peach/10 bg-white"
                   )}
+                  style={isUploading && dominantColor ? { backgroundColor: `${dominantColor}22` } : {}}
                 >
                   {previewUrl && !isUploading && (
                     <img src={previewUrl} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" alt="Preview Background" />
@@ -261,11 +288,13 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                   <Upload className={cn("w-8 h-8 relative z-10", isUploading ? "text-peach animate-bounce" : "text-peach/40")} />
                   <div className="text-center relative z-10">
                     <p className="text-sm font-bold text-foreground/80">
-                      {isUploading ? "Preserving..." : (mediaUrl || previewUrl) ? "Replace Selection" : `Preserve ${type}`}
+                      {isUploading ? "Extracting Essence..." : (mediaUrl || previewUrl) ? "Replace Selection" : `Preserve ${type}`}
                     </p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
-                      Max: 100MB
-                    </p>
+                    {currentFileName && (
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1 truncate max-w-[200px]">
+                        {currentFileName}
+                      </p>
+                    )}
                   </div>
                   <input
                     type="file"
@@ -279,7 +308,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                 {isUploading && <Progress value={uploadProgress} className="h-1.5 bg-peach/10" />}
                 {(mediaUrl || previewUrl) && !isUploading && (
                   <p className="text-[9px] text-center text-peach/60 uppercase tracking-[0.2em] font-bold">
-                    {mediaUrl ? "Server-Side Sync Complete" : "Local Preview Active"}
+                    {mediaUrl ? "Chromatic Signature Captured" : "Local Preview Ready"}
                   </p>
                 )}
               </div>
