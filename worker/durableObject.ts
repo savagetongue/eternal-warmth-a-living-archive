@@ -1,5 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
-import type { MemoryEntry, DemoItem } from '@shared/types';
+import type { MemoryEntry, DemoItem } from '../shared/types';
 const INITIAL_MEMORIES: MemoryEntry[] = [
   {
     id: '1',
