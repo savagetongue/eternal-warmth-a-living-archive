@@ -1,11 +1,10 @@
-export type MemoryType = 'text' | 'image' | 'video';
+export type MemoryType = 'text' | 'image' | 'video' | 'audio';
 export interface MemoryEntry {
   id: string;
   content: string;
   date: string;
   type: MemoryType;
   mediaUrl?: string;
-  mood?: string;
 }
 export interface ApiResponse<T = unknown> {
   success: boolean;

@@ -13,6 +13,12 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const data = await stub.addMemory(body);
         return c.json({ success: true, data } satisfies ApiResponse<MemoryEntry[]>);
     });
-    // Support for template health checks
+    app.put('/api/memories/:id', async (c) => {
+        const id = c.req.param('id');
+        const updates = await c.req.json() as Partial<MemoryEntry>;
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.updateMemory(id, updates);
+        return c.json({ success: true, data } satisfies ApiResponse<MemoryEntry[]>);
+    });
     app.get('/api/test', (c) => c.json({ success: true, data: { name: 'Eternal Archive API' }}));
 }
