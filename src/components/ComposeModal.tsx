@@ -26,22 +26,64 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const [content, setContent] = useState('');
   const [type, setType] = useState<MemoryType>('text');
   const [mediaUrl, setMediaUrl] = useState('');
+  const [previewUrl, setPreviewUrl] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [showUrlInput, setShowUrlInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const generateThumbnail = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      if (!file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 400;
+          const MAX_HEIGHT = 300;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
   const resetForm = useCallback(() => {
     if (initialData) {
       setContent(initialData.content);
       setType(initialData.type);
       setMediaUrl(initialData.mediaUrl || '');
+      setPreviewUrl(initialData.previewUrl || '');
       setDate(initialData.date);
     } else {
       setContent('');
       setType('text');
       setMediaUrl('');
+      setPreviewUrl('');
       setDate(new Date().toISOString().split('T')[0]);
     }
     setUploadProgress(0);
@@ -52,7 +94,6 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     if (isOpen) {
       resetForm();
     } else {
-      // Cleanup: ensure uploading states are cleared if modal closes
       setIsUploading(false);
       setUploadProgress(0);
     }
@@ -64,6 +105,9 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       toast.error("File is too heavy (Max 100MB)");
       return;
     }
+    // Immediate local preview
+    const localPreview = await generateThumbnail(file);
+    setPreviewUrl(localPreview);
     setIsUploading(true);
     setUploadProgress(10);
     const formData = new FormData();
@@ -87,7 +131,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
         throw new Error(json.error || "Upload failed");
       }
     } catch (err) {
-      toast.error("Archive busy. Try again later.");
+      toast.warning("Server preservation pending. Using local copy for now.");
       console.error(err);
     } finally {
       clearInterval(interval);
@@ -100,16 +144,16 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
-    if (type !== 'text' && !mediaUrl) {
+    if (type !== 'text' && !mediaUrl && !previewUrl) {
       toast.error("Please provide or upload media for this memory.");
       return;
     }
     setIsSubmitting(true);
-    // Data Integrity: strictly clean the payload
     const entryData: Omit<MemoryEntry, 'id'> = {
       content: content.trim(),
       type,
       mediaUrl: type === 'text' ? undefined : (mediaUrl || undefined),
+      previewUrl: type === 'text' ? undefined : (previewUrl || undefined),
       date: date
     };
     try {
@@ -189,7 +233,10 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                   )}
                   onClick={() => {
                     setType(item.id as MemoryType);
-                    if (item.id === 'text') setMediaUrl('');
+                    if (item.id === 'text') {
+                      setMediaUrl('');
+                      setPreviewUrl('');
+                    }
                   }}
                 >
                   <item.icon className="w-4 h-4" />
@@ -204,15 +251,17 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                 <div
                   onClick={() => !isUploading && fileInputRef.current?.click()}
                   className={cn(
-                    "border-2 border-dashed rounded-[2rem] p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all",
+                    "relative border-2 border-dashed rounded-[2rem] p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all overflow-hidden",
                     isUploading ? "bg-peach/5 border-peach/30" : "hover:bg-peach/5 border-peach/10 bg-white"
                   )}
-                  aria-label={`Upload ${type} file`}
                 >
-                  <Upload className={cn("w-8 h-8", isUploading ? "text-peach animate-bounce" : "text-peach/40")} />
-                  <div className="text-center">
+                  {previewUrl && !isUploading && (
+                    <img src={previewUrl} className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none" alt="Preview Background" />
+                  )}
+                  <Upload className={cn("w-8 h-8 relative z-10", isUploading ? "text-peach animate-bounce" : "text-peach/40")} />
+                  <div className="text-center relative z-10">
                     <p className="text-sm font-bold text-foreground/80">
-                      {isUploading ? "Preserving..." : mediaUrl ? "Replace Preservation" : `Preserve ${type}`}
+                      {isUploading ? "Preserving..." : (mediaUrl || previewUrl) ? "Replace Selection" : `Preserve ${type}`}
                     </p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
                       Max: 100MB
@@ -228,9 +277,9 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                   />
                 </div>
                 {isUploading && <Progress value={uploadProgress} className="h-1.5 bg-peach/10" />}
-                {mediaUrl && !isUploading && (
+                {(mediaUrl || previewUrl) && !isUploading && (
                   <p className="text-[9px] text-center text-peach/60 uppercase tracking-[0.2em] font-bold">
-                    Media Linked Successfully
+                    {mediaUrl ? "Server-Side Sync Complete" : "Local Preview Active"}
                   </p>
                 )}
               </div>

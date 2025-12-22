@@ -14,9 +14,10 @@ interface MemoryCardProps {
 }
 export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory, index, onEdit, onDelete }, ref) => {
   const [isMediaLoading, setIsMediaLoading] = useState(true);
-  const isImage = memory.type === 'image' && memory.mediaUrl;
-  const isVideo = memory.type === 'video' && memory.mediaUrl;
-  const isAudio = memory.type === 'audio' && memory.mediaUrl;
+  const displayUrl = memory.mediaUrl || memory.previewUrl;
+  const isImage = memory.type === 'image' && displayUrl;
+  const isVideo = memory.type === 'video' && displayUrl;
+  const isAudio = memory.type === 'audio' && displayUrl;
   const rotation = useMemo(() => (Math.random() * 2 - 1).toFixed(2), []);
   const handleDelete = async () => {
     if (!window.confirm("Remove this memory from our eternal archive?")) return;
@@ -99,7 +100,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
             )}
             {isImage ? (
               <img
-                src={memory.mediaUrl}
+                src={displayUrl}
                 alt={`Cherished moment from ${formattedDate}`}
                 className={cn(
                   "w-full h-full object-cover transition-all duration-1000 group-hover:scale-110",
@@ -110,7 +111,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
               />
             ) : (
               <video
-                src={memory.mediaUrl}
+                src={displayUrl}
                 controls
                 className={cn(
                   "w-full h-full object-contain",
@@ -144,7 +145,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
               <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-peach/60">Audio Keepsake</span>
             </div>
             <audio
-              src={memory.mediaUrl}
+              src={displayUrl}
               controls
               className="w-full h-10 opacity-80 mix-blend-multiply dark:mix-blend-normal"
             />

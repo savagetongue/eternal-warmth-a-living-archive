@@ -5,6 +5,7 @@ export interface MemoryEntry {
   date: string;
   type: MemoryType;
   mediaUrl?: string;
+  previewUrl?: string;
 }
 export interface ApiResponse<T = unknown> {
   success: boolean;
