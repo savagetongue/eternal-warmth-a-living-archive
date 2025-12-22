@@ -1,6 +1,6 @@
 # Anand Sakshi Archive
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/savagetongue/eternal-warmth-a-living-archive)
 
 A modern full-stack application built on Cloudflare Workers, featuring a React frontend with shadcn/ui components, serverless API with Hono, and persistent storage via Durable Objects. This project demonstrates real-time collaboration, stateful data management, and seamless deployment on Cloudflare's edge network.
 
@@ -86,7 +86,7 @@ bun run deploy
 
 This builds the frontend (`dist/`) and deploys via Wrangler. Assets are served as a SPA.
 
-[cloudflarebutton]
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/savagetongue/eternal-warmth-a-living-archive)
 
 **Manual Steps**:
 1. `bunx wrangler@latest login`
