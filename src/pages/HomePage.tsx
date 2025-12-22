@@ -65,14 +65,14 @@ export function HomePage() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-            className="text-center space-y-12 mb-20 md:mb-32"
+            className="text-center space-y-12 mb-32 md:mb-48"
           >
-            <div className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-white/60 backdrop-blur-xl border border-peach/20 shadow-sm text-peach font-bold text-[10px] tracking-[0.3em] uppercase">
+            <div className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-white/60 backdrop-blur-xl border border-peach/20 shadow-sm text-peach font-black text-[10px] tracking-[0.3em] uppercase">
               <Sparkles className="w-3.5 h-3.5" />
               Living Archive
             </div>
             <div className="space-y-6">
-              <h1 className="text-[16vw] md:text-[11rem] font-serif font-black text-foreground tracking-tighter leading-[0.85] drop-shadow-sm select-none">
+              <h1 className="text-[16vw] md:text-[11rem] font-serif font-black text-foreground tracking-[-0.08em] leading-[0.85] drop-shadow-sm select-none">
                 02<span className="text-peach/60 italic">.</span>09<span className="text-peach/60 italic">.</span>23
               </h1>
               <div className="flex items-center justify-center gap-6">
@@ -87,7 +87,7 @@ export function HomePage() {
             <TimeKeeper />
           </motion.div>
           {/* Feed Section */}
-          <div className="w-full space-y-20 max-w-5xl">
+          <div className="w-full space-y-24 max-w-5xl">
             <div className="flex flex-col md:flex-row items-center justify-between border-b border-peach/10 pb-10 gap-6">
               <div className="space-y-2 text-center md:text-left">
                 <h2 className="text-4xl font-serif font-bold text-foreground flex items-center justify-center md:justify-start gap-4">
@@ -100,7 +100,7 @@ export function HomePage() {
                 {memories.length} Moments Preserved
               </div>
             </div>
-            <div className="flex flex-col space-y-32 items-center">
+            <div className="flex flex-col space-y-32 md:space-y-48 items-center">
               <AnimatePresence mode="popLayout">
                 {isLoading ? (
                   [...Array(3)].map((_, i) => (
@@ -176,7 +176,7 @@ export function HomePage() {
       >
         <Button
           onClick={handleNew}
-          className="rounded-full w-16 h-16 shadow-[0_20px_50px_rgba(255,154,158,0.4)] bg-peach hover:bg-peach-dark text-white border-none transition-all duration-500 hover:scale-110 active:scale-90 group"
+          className="rounded-full w-16 h-16 shadow-[0_20px_50px_rgba(255,154,158,0.4)] bg-peach/80 backdrop-blur-sm hover:bg-peach text-white border-none transition-all duration-500 hover:scale-110 active:scale-90 group"
           size="icon"
         >
           <Plus className="w-8 h-8 transition-transform duration-700 group-hover:rotate-180" />
