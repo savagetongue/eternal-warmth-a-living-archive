@@ -88,48 +88,40 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
         </span>
         <div className="h-px flex-1 bg-peach/10" />
       </div>
-      {isImage && (
+      {(isImage || isVideo) && (
         <div className="space-y-8">
-          <div className="relative overflow-hidden rounded-[2rem] aspect-[16/10] shadow-inner border-4 border-warm-paper bg-warm-cream/10">
+          <div className="relative overflow-hidden rounded-[2rem] aspect-[16/10] shadow-inner border-4 border-warm-paper bg-peach/5">
             {isMediaLoading && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-peach/30 animate-spin" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-peach/5 animate-pulse">
+                <Loader2 className="w-10 h-10 text-peach/20 animate-spin" />
+                <span className="mt-4 text-[9px] uppercase tracking-[0.3em] text-peach/30 font-bold">Unveiling Moment</span>
               </div>
             )}
-            <img
-              src={memory.mediaUrl}
-              alt={`A cherished moment from ${formattedDate}`}
-              className={cn(
-                "w-full h-full object-cover transition-all duration-1000 group-hover:scale-110",
-                isMediaLoading ? "opacity-0" : "opacity-100"
-              )}
-              onLoad={() => setIsMediaLoading(false)}
-              loading="lazy"
-            />
+            {isImage ? (
+              <img
+                src={memory.mediaUrl}
+                alt={`Cherished moment from ${formattedDate}`}
+                className={cn(
+                  "w-full h-full object-cover transition-all duration-1000 group-hover:scale-110",
+                  isMediaLoading ? "opacity-0" : "opacity-100"
+                )}
+                onLoad={() => setIsMediaLoading(false)}
+                loading="lazy"
+              />
+            ) : (
+              <video
+                src={memory.mediaUrl}
+                controls
+                className={cn(
+                  "w-full h-full object-contain",
+                  isMediaLoading ? "opacity-0" : "opacity-100"
+                )}
+                onLoadedData={() => setIsMediaLoading(false)}
+              />
+            )}
           </div>
           <p className="text-xl md:text-3xl font-serif leading-relaxed text-foreground/90 italic text-center px-4 whitespace-pre-wrap">
             "{memory.content}"
-          </p>
-        </div>
-      )}
-      {isVideo && (
-        <div className="space-y-8">
-          <div className="overflow-hidden rounded-[2rem] aspect-video bg-black shadow-2xl border-4 border-warm-paper relative">
-             {isMediaLoading && (
-              <div className="absolute inset-0 flex items-center justify-center z-10">
-                <Loader2 className="w-8 h-8 text-peach/30 animate-spin" />
-              </div>
-            )}
-            <video
-              src={memory.mediaUrl}
-              controls
-              title={`Video memory from ${formattedDate}`}
-              className="w-full h-full object-contain"
-              onLoadedData={() => setIsMediaLoading(false)}
-            />
-          </div>
-          <p className="text-xl md:text-2xl font-serif leading-relaxed text-foreground/90 italic text-center px-4 whitespace-pre-wrap">
-            {memory.content}
           </p>
         </div>
       )}
