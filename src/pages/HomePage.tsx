@@ -44,7 +44,7 @@ export function HomePage() {
   return (
     <div className="min-h-screen bg-transparent relative selection:bg-peach/30 overflow-x-hidden">
       <ThemeToggle className="fixed top-6 right-6 lg:right-10" />
-      <Toaster richColors position="top-center" closeButton />
+      <Toaster richColors position="bottom-right" closeButton />
       {/* Dynamic Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <motion.div
@@ -168,7 +168,7 @@ export function HomePage() {
       <motion.div
         initial={{ scale: 0, rotate: -45 }}
         animate={{ scale: 1, rotate: 0 }}
-        className="fixed bottom-12 right-12 z-[60]"
+        className="fixed bottom-12 right-12 z-40"
       >
         <Button
           onClick={handleNew}

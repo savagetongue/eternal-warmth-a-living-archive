@@ -107,7 +107,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
               loading="lazy"
             />
           </div>
-          <p className="text-xl md:text-3xl font-serif leading-relaxed text-foreground/90 italic text-center px-4">
+          <p className="text-xl md:text-3xl font-serif leading-relaxed text-foreground/90 italic text-center px-4 whitespace-pre-wrap">
             "{memory.content}"
           </p>
         </div>
@@ -128,7 +128,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
               onLoadedData={() => setIsMediaLoading(false)}
             />
           </div>
-          <p className="text-xl md:text-2xl font-serif leading-relaxed text-foreground/90 italic text-center px-4">
+          <p className="text-xl md:text-2xl font-serif leading-relaxed text-foreground/90 italic text-center px-4 whitespace-pre-wrap">
             {memory.content}
           </p>
         </div>
@@ -137,7 +137,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
         <div className="space-y-10">
           <div className="relative text-center px-8">
             <Quote className="absolute -top-4 -left-2 w-16 h-16 text-peach/5 -rotate-12" />
-            <p className="text-xl md:text-4xl font-serif leading-relaxed text-foreground text-pretty">
+            <p className="text-xl md:text-4xl font-serif leading-relaxed text-foreground text-pretty whitespace-pre-wrap">
               {memory.content}
             </p>
           </div>
@@ -162,7 +162,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       {memory.type === 'text' && (
         <div className="relative py-8 md:py-12 px-4 md:px-6">
           <Quote className="absolute -top-6 -left-4 w-16 md:w-24 h-16 md:h-24 text-peach/5 -rotate-6" />
-          <p className="text-xl md:text-4xl font-serif leading-relaxed text-foreground text-pretty text-center selection:bg-peach/20">
+          <p className="text-xl md:text-4xl font-serif leading-relaxed text-foreground text-pretty text-center selection:bg-peach/20 whitespace-pre-wrap">
             {memory.content}
           </p>
           <Quote className="absolute -bottom-6 -right-4 w-16 md:w-24 h-16 md:h-24 text-peach/5 rotate-[174deg]" />

@@ -37,7 +37,7 @@ export function TimeKeeper() {
       </div>
       <div className="flex flex-col sm:flex-row flex-wrap justify-center items-center gap-x-8 lg:gap-x-12 gap-y-4 sm:gap-y-12 max-w-7xl p-8 w-full">
         {displayUnits.map((unit) => (
-          <div key={unit.label} className="flex flex-col items-center flex-shrink-0">
+          <div key={unit.label} className="flex flex-col items-center flex-shrink-0 min-w-[120px] lg:min-w-[160px]">
             <div className="relative overflow-visible h-24 lg:h-36 flex items-center justify-center min-w-[4.5ch] lg:min-w-[5ch]">
               <AnimatePresence mode="popLayout">
                 <motion.span
@@ -46,7 +46,7 @@ export function TimeKeeper() {
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: -40, opacity: 0 }}
                   transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-                  className="text-6xl lg:text-9xl font-mono font-black text-foreground tabular-nums tracking-[-0.08em] select-none"
+                  className="text-6xl lg:text-9xl font-mono font-black text-foreground tabular-nums tracking-[-0.08em] select-none whitespace-nowrap"
                 >
                   {(unit.value).toString().padStart(2, '0')}
                 </motion.span>
@@ -57,7 +57,7 @@ export function TimeKeeper() {
                 className="absolute inset-0 bg-peach/20 blur-[80px] rounded-full -z-10 pointer-events-none"
               />
             </div>
-            <span className="text-xs lg:text-sm uppercase tracking-[0.5em] text-muted-foreground/50 mt-6 lg:mt-8 font-black ml-[0.5em] select-none">
+            <span className="text-xs lg:text-sm uppercase tracking-[0.5em] text-muted-foreground/50 mt-6 lg:mt-8 font-black ml-[0.5em] select-none whitespace-nowrap">
               {unit.label}
             </span>
           </div>
