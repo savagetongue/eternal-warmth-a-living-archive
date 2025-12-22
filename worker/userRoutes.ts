@@ -50,35 +50,14 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
             const uuid = crypto.randomUUID();
             const filename = `${uuid}-${Date.now()}.${extension}`;
             const key = `${type}/${filename}`;
-            // Seed logic: use the first block of the UUID for consistent previews across sessions
-            const seed = uuid.split('-')[0];
-            let placeholderUrl;
-            switch (type) {
-                case 'image':
-                    // Added blur parameter for that "Illustrative" soft look
-                    placeholderUrl = `https://picsum.photos/seed/${seed}/1200/800?blur=2`;
-                    break;
-                case 'video':
-                    placeholderUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-                    break;
-                case 'audio':
-                    placeholderUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-                    break;
-                default:
-                    placeholderUrl = 'https://via.placeholder.com/400x300/FF6B6B/FFFFFF?text=Media';
+            if (c.env.MEMORIES_BUCKET) {
+                await c.env.MEMORIES_BUCKET.put(key, await file.arrayBuffer(), {
+                    httpMetadata: { contentType: file.type }
+                });
+                const publicUrl = `/api/media/${key}`;
+                return c.json({ success: true, data: { url: publicUrl, key } });
             }
-            try {
-                if (c.env.MEMORIES_BUCKET) {
-                    await c.env.MEMORIES_BUCKET.put(key, await file.arrayBuffer(), {
-                        httpMetadata: { contentType: file.type }
-                    });
-                    const publicUrl = `/api/media/${key}`;
-                    return c.json({ success: true, data: { url: publicUrl, key } });
-                }
-            } catch (uploadErr) {
-                console.error('R2 upload failed:', uploadErr);
-            }
-            return c.json({ success: true, data: { url: placeholderUrl, key } });
+            return c.json({ success: false, error: 'Server storage is unavailable. Preservation continues locally.' }, 503);
         } catch (err) {
             console.error('Upload error:', err);
             return c.json({ success: false, error: 'Failed to upload media' }, 500);
