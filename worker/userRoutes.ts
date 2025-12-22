@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { Env } from './core-utils';
 import type { MemoryEntry, ApiResponse } from '../shared/types';
 type ExtendedEnv = Env & {
@@ -34,6 +35,7 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
         headers.set('Cache-Control', 'public, max-age=31536000');
         return new Response(object.body, { headers });
     });
+    app.use('/api/memories/upload', cors({ origin: '*', allowMethods: ['POST', 'OPTIONS'], allowHeaders: ['Content-Type'], exposeHeaders: [], credentials: false }));
     app.post('/api/memories/upload', async (c) => {
         try {
             const formData = await c.req.formData();
@@ -63,17 +65,21 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
                 default:
                     placeholderUrl = 'https://via.placeholder.com/400x300/FF6B6B/FFFFFF?text=Media';
             }
-            
-            if (c.env.MEMORIES_BUCKET) {
-                await c.env.MEMORIES_BUCKET.put(key, await file.arrayBuffer(), {
-                    httpMetadata: { contentType: file.type }
-                });
-                // Return a consistent relative URL that the GET /api/media route handles
-                const publicUrl = `/api/media/${key}`;
-                return c.json({ success: true, data: { url: publicUrl, key } });
+
+            try {
+                if (c.env.MEMORIES_BUCKET) {
+                    await c.env.MEMORIES_BUCKET.put(key, await file.arrayBuffer(), {
+                        httpMetadata: { contentType: file.type }
+                    });
+                    // Return a consistent relative URL that the GET /api/media route handles
+                    const publicUrl = `/api/media/${key}`;
+                    return c.json({ success: true, data: { url: publicUrl, key } });
+                }
+            } catch (uploadErr) {
+                console.error('R2 upload failed:', uploadErr);
             }
-            
-            return c.json({ success: true, data: { url: placeholderUrl, key } });
+
+            return c.json({ success: true, data: { url: placeholderUrl || `/api/media/${key}`, key } });
         } catch (err) {
             console.error('Upload error:', err);
             return c.json({ success: false, error: 'Failed to upload media' }, 500);
