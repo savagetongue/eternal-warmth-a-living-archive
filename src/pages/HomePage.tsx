@@ -5,6 +5,7 @@ import { MemoryCard } from '@/components/MemoryCard';
 import { ComposeModal } from '@/components/ComposeModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 import { Sparkles, Heart, Plus, Feather, ChevronDown, BookOpen, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { MemoryEntry } from '@shared/types';
@@ -41,7 +42,6 @@ export function HomePage() {
   const handleSuccess = async () => {
     await fetchMemories();
   };
-
   const handleClearArchive = async () => {
     if (!window.confirm("Are you certain? This will dissolve all memories in our eternal archive forever.")) return;
     try {
@@ -55,7 +55,6 @@ export function HomePage() {
       toast.error("The archive could not be reached.");
     }
   };
-
   const { scrollYProgress } = useScroll();
   const y1 = useTransform(scrollYProgress, [0, 1], [0, -400]);
   const y2 = useTransform(scrollYProgress, [0, 1], [0, -800]);
@@ -182,7 +181,7 @@ export function HomePage() {
                       onClick={handleNew}
                     >
                       <span className="relative z-10">Write the First Chapter</span>
-                      <motion.div 
+                      <motion.div
                         className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-0 transition-transform duration-500"
                       />
                     </Button>
@@ -204,8 +203,8 @@ export function HomePage() {
             </p>
             <div className="flex flex-col items-center gap-8">
               <p className="text-[11px] uppercase tracking-[0.6em] text-peach/30 font-black select-none">Eternal Warmth: A Living Archive</p>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 onClick={handleClearArchive}
                 className="text-[9px] uppercase tracking-[0.3em] text-muted-foreground/20 hover:text-red-400/40 transition-colors font-black"
               >
