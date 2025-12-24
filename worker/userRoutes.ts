@@ -17,6 +17,11 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
         const data = await stub.addMemory(body);
         return c.json({ success: true, data } satisfies ApiResponse<MemoryEntry[]>);
     });
+    app.delete('/api/memories/clear', async (c) => {
+        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+        const data = await stub.clearMemories();
+        return c.json({ success: true, data } satisfies ApiResponse<MemoryEntry[]>);
+    });
     app.get('/api/media/:type/:filename', async (c) => {
         const filename = c.req.param('filename');
         const type = c.req.param('type');

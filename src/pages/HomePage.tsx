@@ -5,7 +5,7 @@ import { MemoryCard } from '@/components/MemoryCard';
 import { ComposeModal } from '@/components/ComposeModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Toaster } from '@/components/ui/sonner';
-import { Sparkles, Heart, Plus, Feather, ChevronDown, BookOpen, Loader2 } from 'lucide-react';
+import { Sparkles, Heart, Plus, Feather, ChevronDown, BookOpen, Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
@@ -41,6 +41,21 @@ export function HomePage() {
   const handleSuccess = async () => {
     await fetchMemories();
   };
+
+  const handleClearArchive = async () => {
+    if (!window.confirm("Are you certain? This will dissolve all memories in our eternal archive forever.")) return;
+    try {
+      const res = await fetch('/api/memories/clear', { method: 'DELETE' });
+      const json = await res.json();
+      if (json.success) {
+        setMemories([]);
+        toast.success("The archive is now a pure canvas.");
+      }
+    } catch (err) {
+      toast.error("The archive could not be reached.");
+    }
+  };
+
   const { scrollYProgress } = useScroll();
   const y1 = useTransform(scrollYProgress, [0, 1], [0, -400]);
   const y2 = useTransform(scrollYProgress, [0, 1], [0, -800]);
@@ -187,7 +202,16 @@ export function HomePage() {
             <p className="text-2xl md:text-3xl text-muted-foreground/50 font-serif italic select-none">
               Each moment a thread, each thread a forever.
             </p>
-            <p className="text-[11px] uppercase tracking-[0.6em] text-peach/30 font-black select-none">Eternal Warmth: A Living Archive</p>
+            <div className="flex flex-col items-center gap-8">
+              <p className="text-[11px] uppercase tracking-[0.6em] text-peach/30 font-black select-none">Eternal Warmth: A Living Archive</p>
+              <Button 
+                variant="ghost" 
+                onClick={handleClearArchive}
+                className="text-[9px] uppercase tracking-[0.3em] text-muted-foreground/20 hover:text-red-400/40 transition-colors font-black"
+              >
+                <Trash2 className="w-3 h-3 mr-2" /> Reset Digital Sanctuary
+              </Button>
+            </div>
           </div>
         </footer>
       </div>
@@ -199,7 +223,10 @@ export function HomePage() {
       >
         <Button
           onClick={handleNew}
-          className="rounded-full w-16 h-16 md:w-20 md:h-20 shadow-[0_20px_50px_rgba(255,154,158,0.4)] bg-peach/90 backdrop-blur-md hover:bg-peach text-white border-none transition-all duration-500 hover:scale-110 active:scale-95 group"
+          className={cn(
+            "rounded-full w-16 h-16 md:w-20 md:h-20 shadow-[0_20px_50px_rgba(255,154,158,0.4)] bg-peach/90 backdrop-blur-md hover:bg-peach text-white border-none transition-all duration-500 hover:scale-110 active:scale-95 group",
+            memories.length === 0 && "animate-pulse ring-4 ring-peach/20"
+          )}
           size="icon"
           aria-label="Add new memory"
         >

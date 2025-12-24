@@ -1,6 +1,5 @@
 import { DurableObject } from "cloudflare:workers";
 import type { MemoryEntry, DemoItem, MemoryType } from '../shared/types';
-const INITIAL_MEMORIES: MemoryEntry[] = [];
 const MEM_PREFIX = "mem:";
 export class GlobalDurableObject extends DurableObject {
     private validateEntry(entry: MemoryEntry) {
@@ -54,6 +53,15 @@ export class GlobalDurableObject extends DurableObject {
     async deleteMemory(id: string): Promise<MemoryEntry[]> {
       await this.ctx.storage.delete(MEM_PREFIX + id);
       return await this.getMemories();
+    }
+    async clearMemories(): Promise<MemoryEntry[]> {
+      const memoryMap = await this.ctx.storage.list({ prefix: MEM_PREFIX });
+      const keys = Array.from(memoryMap.keys());
+      if (keys.length > 0) {
+        // Delete in batches or all at once depending on scale; for this project bulk delete is safe
+        await this.ctx.storage.delete(keys);
+      }
+      return [];
     }
     async getCounterValue(): Promise<number> { return 0; }
     async increment(): Promise<number> { return 0; }
