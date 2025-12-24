@@ -33,6 +33,30 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
         headers.set('etag', object.httpEtag);
         headers.set('Cache-Control', 'public, max-age=31536000, immutable');
         headers.set('Content-Length', object.size.toString());
+        headers.set('Access-Control-Allow-Origin', '*');
+        headers.set('Access-Control-Expose-Headers', 'ETag, Content-Length, Content-Range, Accept-Ranges');
+        
+        const rangeStr = c.req.header('Range');
+        if (rangeStr?.startsWith('bytes=')) {
+            const parts = rangeStr.slice(6).split('-');
+            const start = parseInt(parts[0], 10);
+            const end = parts[1] ? parseInt(parts[1], 10) : object.size - 1;
+            if (start < object.size) {
+                const chunkSize = end - start + 1;
+                headers.set('Content-Range', `bytes ${start}-${end}/${object.size}`);
+                headers.set('Content-Length', chunkSize.toString());
+                headers.set('Accept-Ranges', 'bytes');
+                const rangeObj = await c.env.MEMORIES_BUCKET.get(key, { range: { start, end } });
+                if (rangeObj && rangeObj.body) {
+                    return new Response(rangeObj.body, {
+                        status: 206,
+                        headers: headers as any
+                    });
+                }
+            }
+        }
+        headers.set('Accept-Ranges', 'bytes');
+        
         const ext = filename.split('.').pop()?.toLowerCase();
         const mimeMap: Record<string, string> = {
             'mp4': 'video/mp4',
@@ -72,7 +96,7 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
                 uploadUrl = `/api/media/${type}/${filename}`;
             } else {
                 // Production-grade fallback placeholders if bucket missing
-                if (isVideo) uploadUrl = 'https://assets.mixkit.co/videos/preview/mixkit-clouds-moving-fast-during-a-sunset-173-large.mp4';
+                if (isVideo) uploadUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
                 else if (isAudio) uploadUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
                 else uploadUrl = 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&q=80&w=800';
             }

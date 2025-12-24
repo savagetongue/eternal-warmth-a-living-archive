@@ -15,6 +15,14 @@ interface MemoryCardProps {
 export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory, index, onEdit, onDelete }, ref) => {
   const [isMediaLoading, setIsMediaLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+
+  // Reset loading states when memory changes (only for media types)
+  useEffect(() => {
+    if (memory.type !== 'text') {
+      setIsMediaLoading(true);
+      setHasError(false);
+    }
+  }, [memory.type, memory.id]);
   const [isRecentlyAdded, setIsRecentlyAdded] = useState(false);
   useEffect(() => {
     const recent = localStorage.getItem('recent_memory_id');
@@ -72,6 +80,8 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
               src={memory.mediaUrl}
               poster={memory.previewUrl}
               controls
+              preload="metadata"
+              playsInline={true}
               className={cn("relative z-10 w-full h-full object-contain transition-opacity duration-1000", isMediaLoading ? "opacity-0" : "opacity-100")}
               onLoadedData={() => setIsMediaLoading(false)}
               onError={() => { setIsMediaLoading(false); setHasError(true); }}
@@ -126,7 +136,17 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                 {memory.fileName && <span className="text-[9px] text-muted-foreground truncate max-w-[150px]">{memory.fileName}</span>}
               </div>
             </div>
-            {memory.mediaUrl && !hasError ? <audio src={memory.mediaUrl} controls className="w-full relative z-10 opacity-80" /> : <div className="w-full h-16 bg-white/40 rounded-2xl border-2 border-dashed border-peach/20 relative z-10" />}
+            {memory.mediaUrl && !hasError ? (
+              <audio 
+                src={memory.mediaUrl} 
+                controls 
+                className="w-full relative z-10 opacity-80"
+                onError={() => { setIsMediaLoading(false); setHasError(true); }}
+                preload="metadata"
+              />
+            ) : (
+              <div className="w-full h-16 bg-white/40 rounded-2xl border-2 border-dashed border-peach/20 relative z-10" />
+            )}
           </div>
         </div>
       )}
