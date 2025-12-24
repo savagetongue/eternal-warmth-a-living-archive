@@ -4,32 +4,39 @@
 @tailwind utilities;
 @layer base {
   :root {
-    --background: 40 30% 98%;
-    --foreground: 20 20% 15%;
+    --background: 0 0% 100%;
+    --foreground: 10 20% 20%;
     --primary: 350 80% 80%;
     --primary-foreground: 350 20% 20%;
-    --muted: 40 20% 94%;
-    --muted-foreground: 20 10% 40%;
-    --border: 40 20% 90%;
+    --muted: 40 20% 96%;
+    --muted-foreground: 10 10% 45%;
+    --border: 10 20% 92%;
     --ring: 350 80% 80%;
     --card: 0 0% 100%;
-    --card-foreground: 20 20% 15%;
+    --card-foreground: 10 20% 20%;
     --radius: 1.5rem;
   }
   .dark {
-    --background: 20 20% 10%;
-    --foreground: 40 10% 90%;
-    --primary: 350 50% 60%;
+    --background: 20 15% 15%;
+    --foreground: 0 0% 95%;
+    --primary: 350 60% 70%;
     --primary-foreground: 350 10% 98%;
-    --muted: 20 15% 15%;
-    --muted-foreground: 20 10% 60%;
-    --border: 20 15% 20%;
+    --muted: 20 15% 18%;
+    --muted-foreground: 20 10% 70%;
+    --border: 20 15% 22%;
+    --card: 20 15% 18%;
+    --card-foreground: 0 0% 95%;
   }
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    background-image: 
-      radial-gradient(at 0% 0%, hsla(350,100%,95%,1) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, hsla(210,100%,95%,1) 0px, transparent 50%);
+    @apply bg-background text-foreground font-sans antialiased transition-colors duration-700;
+    background-image:
+      radial-gradient(at 0% 0%, hsla(350,100%,98%,1) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(210,100%,98%,1) 0px, transparent 50%);
+  }
+  .dark body {
+    background-image:
+      radial-gradient(at 0% 0%, hsla(350,50%,20%,1) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(210,50%,20%,1) 0px, transparent 50%);
   }
 }
 @layer utilities {

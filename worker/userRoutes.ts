@@ -35,7 +35,6 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
         headers.set('Content-Length', object.size.toString());
         headers.set('Access-Control-Allow-Origin', '*');
         headers.set('Access-Control-Expose-Headers', 'ETag, Content-Length, Content-Range, Accept-Ranges');
-        
         const rangeStr = c.req.header('Range');
         if (rangeStr?.startsWith('bytes=')) {
             const parts = rangeStr.slice(6).split('-');
@@ -46,9 +45,12 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
                 headers.set('Content-Range', `bytes ${start}-${end}/${object.size}`);
                 headers.set('Content-Length', chunkSize.toString());
                 headers.set('Accept-Ranges', 'bytes');
-                const rangeObj = await c.env.MEMORIES_BUCKET.get(key, { range: { start, end } });
+                // Using standard R2Range interface: { offset, length }
+                const rangeObj = await c.env.MEMORIES_BUCKET.get(key, { 
+                  range: { offset: start, length: chunkSize } 
+                });
                 if (rangeObj && rangeObj.body) {
-                    return new Response(rangeObj.body, {
+                    return new Response(rangeObj.body as any, {
                         status: 206,
                         headers: headers as any
                     });
@@ -56,7 +58,6 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
             }
         }
         headers.set('Accept-Ranges', 'bytes');
-        
         const ext = filename.split('.').pop()?.toLowerCase();
         const mimeMap: Record<string, string> = {
             'mp4': 'video/mp4',
@@ -95,7 +96,6 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
                 });
                 uploadUrl = `/api/media/${type}/${filename}`;
             } else {
-                // Production-grade fallback placeholders if bucket missing
                 if (isVideo) uploadUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
                 else if (isAudio) uploadUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
                 else uploadUrl = 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&q=80&w=800';

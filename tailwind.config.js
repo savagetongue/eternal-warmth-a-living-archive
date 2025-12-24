@@ -18,6 +18,7 @@ export default {
 				cream: '#F9F3E5',
 				paper: '#FFF9F0'
   			},
+			'mist-glow': 'rgba(161, 196, 253, 0.3)',
   			peach: {
   				DEFAULT: '#FF9A9E',
 				light: '#FECFEF',

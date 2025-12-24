@@ -19,8 +19,6 @@ export function HomePage() {
       const res = await fetch('/api/memories');
       const json = await res.json();
       if (json.success) {
-        // Payload verification: Inspect previewUrl and mediaUrl integrity
-        console.log('[ARCHIVE PAYLOAD]', json.data);
         setMemories(json.data);
       }
     } catch (err) {
@@ -48,8 +46,8 @@ export function HomePage() {
   const y2 = useTransform(scrollYProgress, [0, 1], [0, -800]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
   return (
-    <div className="min-h-screen bg-transparent relative selection:bg-peach/30 overflow-x-hidden">
-      <ThemeToggle className="fixed top-6 right-6 lg:right-10 z-50" />
+    <div className="min-h-screen bg-transparent relative selection:bg-peach/30 overflow-x-hidden transition-colors duration-700">
+      <ThemeToggle className="fixed top-6 right-6 lg:right-10 z-50 shadow-sm" />
       <Toaster richColors position="bottom-right" closeButton />
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <motion.div
@@ -119,7 +117,7 @@ export function HomePage() {
                     className="w-full flex flex-col items-center justify-center py-64 space-y-8"
                   >
                     <Loader2 className="w-12 h-12 text-peach animate-spin" />
-                    <p className="font-serif text-2xl italic text-muted-foreground/60">Seeding eternal memories...</p>
+                    <p className="font-serif text-2xl italic text-muted-foreground/60">Opening the archive...</p>
                   </motion.div>
                 ) : memories.length > 0 ? (
                   memories.map((memory, index) => (
@@ -149,21 +147,29 @@ export function HomePage() {
                     key="empty"
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="w-full max-w-4xl text-center py-64 bg-white/30 dark:bg-zinc-900/10 backdrop-blur-md rounded-[5rem] border-2 border-dashed border-peach/20 flex flex-col items-center justify-center space-y-12"
+                    className="w-full max-w-4xl text-center py-64 bg-white/30 dark:bg-zinc-900/10 backdrop-blur-md rounded-[5rem] border-2 border-dashed border-peach/20 flex flex-col items-center justify-center space-y-12 shadow-inner"
                   >
-                    <div className="p-8 rounded-full bg-peach/5 border border-peach/10 animate-float">
-                      <BookOpen className="w-16 h-16 text-peach/20" />
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-mist-glow blur-[80px] rounded-full animate-breathe" />
+                      <div className="p-10 rounded-full bg-peach/5 border border-peach/10 relative z-10 animate-float">
+                        <BookOpen className="w-20 h-20 text-peach/40" />
+                      </div>
                     </div>
-                    <div className="space-y-6">
-                      <p className="font-serif text-4xl italic text-muted-foreground/80">Our first page is waiting...</p>
-                      <p className="text-xs text-muted-foreground/40 tracking-[0.5em] uppercase font-black px-12 text-balance">Capture a moment with a letter, a photograph, or a shared melody</p>
+                    <div className="space-y-6 relative z-10">
+                      <p className="font-serif text-4xl md:text-5xl italic text-muted-foreground/80">Our first page is waiting...</p>
+                      <p className="text-[10px] md:text-xs text-muted-foreground/40 tracking-[0.5em] uppercase font-black px-12 text-balance leading-loose">
+                        The archive is yours to fill. Write a letter, share a photograph, or save a melody that belongs to us.
+                      </p>
                     </div>
                     <Button
                       variant="default"
-                      className="rounded-full px-16 py-10 bg-peach text-white hover:bg-peach-dark transition-all duration-700 font-serif text-2xl shadow-xl hover:shadow-peach/30"
+                      className="rounded-full px-20 py-10 bg-peach text-white hover:bg-peach-dark transition-all duration-700 font-serif text-2xl shadow-xl hover:shadow-peach/30 group relative overflow-hidden"
                       onClick={handleNew}
                     >
-                      Write the First Chapter
+                      <span className="relative z-10">Write the First Chapter</span>
+                      <motion.div 
+                        className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-0 transition-transform duration-500"
+                      />
                     </Button>
                   </motion.div>
                 )}
