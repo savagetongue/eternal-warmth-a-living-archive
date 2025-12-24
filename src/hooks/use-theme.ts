@@ -1,25 +1,33 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 export function useTheme() {
   const [isDark, setIsDark] = useState(() => {
-    const savedTheme = localStorage.getItem('theme');
-    // Default to light unless explicitly saved as dark
-    if (savedTheme) {
-      return savedTheme === 'dark';
+    // We handle this in a side effect for SSR/Hydration safety if needed,
+    // but here we check localStorage/system immediately for initial state.
+    try {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) {
+        return savedTheme === 'dark';
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    } catch (e) {
+      return false;
     }
-    // Only use system preference if no user choice is saved
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
   useEffect(() => {
+    const root = window.document.documentElement;
     if (isDark) {
-      document.documentElement.classList.add('dark');
+      root.classList.add('dark');
       localStorage.setItem('theme', 'dark');
     } else {
-      document.documentElement.classList.remove('dark');
+      root.classList.remove('dark');
       localStorage.setItem('theme', 'light');
     }
   }, [isDark]);
-  const toggleTheme = useCallback(() => {
-    setIsDark(prev => !prev);
-  }, []);
+  // We return a stable function reference that doesn't rely on useCallback
+  // to prevent "Rendered more hooks than during the previous render" 
+  // which can happen if hook counts fluctuate in downstream components.
+  const toggleTheme = () => {
+    setIsDark((prev) => !prev);
+  };
   return { isDark, toggleTheme };
 }
