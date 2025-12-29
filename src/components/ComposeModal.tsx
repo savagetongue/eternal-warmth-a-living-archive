@@ -76,13 +76,13 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
           const img = new Image();
           img.onload = () => {
             const canvas = document.createElement('canvas');
-            const scale = 400 / Math.max(img.width, img.height);
+            const scale = 200 / Math.max(img.width, img.height);
             canvas.width = img.width * scale; canvas.height = img.height * scale;
             const ctx = canvas.getContext('2d');
             ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
             const colorData = ctx?.getImageData(0,0,1,1).data;
             const color = colorData ? `#${colorData[0].toString(16).padStart(2,'0')}${colorData[1].toString(16).padStart(2,'0')}${colorData[2].toString(16).padStart(2,'0')}` : fallback;
-            resolve({ thumb: canvas.toDataURL('image/jpeg', 0.7), color });
+            resolve({ thumb: canvas.toDataURL('image/jpeg', 0.5), color });
           };
           img.onerror = () => resolve({ thumb: '', color: fallback });
           img.src = objectUrl;
@@ -92,9 +92,13 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
           video.onloadedmetadata = () => { video.currentTime = 0.5; };
           video.onseeked = () => {
             const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth / 2; canvas.height = video.videoHeight / 2;
-            canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
-            resolve({ thumb: canvas.toDataURL('image/jpeg', 0.7), color: '#A1C4FD' });
+            const scale = Math.min(320 / video.videoWidth, 240 / video.videoHeight, 1);
+            canvas.width = video.videoWidth * scale; canvas.height = video.videoHeight * scale;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const colorData = ctx?.getImageData(0,0,1,1).data;
+            const color = colorData ? `#${colorData[0].toString(16).padStart(2,'0')}${colorData[1].toString(16).padStart(2,'0')}${colorData[2].toString(16).padStart(2,'0')}` : '#A1C4FD';
+            resolve({ thumb: canvas.toDataURL('image/jpeg', 0.5), color });
           };
           video.onerror = () => resolve({ thumb: '', color: fallback });
         } else resolve({ thumb: '', color: fallback });

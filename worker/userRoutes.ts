@@ -13,10 +13,19 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
         return c.json({ success: true, data } satisfies ApiResponse<MemoryEntry[]>);
     });
     app.post('/api/memories', async (c) => {
-        const body = await c.req.json() as MemoryEntry;
-        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.addMemory(body);
-        return c.json({ success: true, data } satisfies ApiResponse<MemoryEntry[]>);
+        try {
+            const body = await c.req.json() as MemoryEntry;
+            const size = new TextEncoder().encode(JSON.stringify(body)).length;
+            if (size > 120 * 1024) {
+                return c.json({ success: false, error: `Payload too large (${(size/1024).toFixed(0)}KB). Limit ~128KB/entry. Compress previews.` }, 413);
+            }
+            const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+            const data = await stub.addMemory(body);
+            return c.json({ success: true, data } satisfies ApiResponse<MemoryEntry[]>);
+        } catch (err: any) {
+            console.error('[ADD_MEMORY_ERROR]', err);
+            return c.json({ success: false, error: err.message || 'Failed to save memory' }, 500);
+        }
     });
     app.delete('/api/memories/clear', async (c) => {
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
@@ -89,11 +98,20 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
         }
     });
     app.put('/api/memories/:id', async (c) => {
-        const id = c.req.param('id');
-        const updates = await c.req.json() as Partial<MemoryEntry>;
-        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.updateMemory(id, updates);
-        return c.json({ success: true, data } satisfies ApiResponse<MemoryEntry[]>);
+        try {
+            const id = c.req.param('id');
+            const updates = await c.req.json() as Partial<MemoryEntry>;
+            const size = new TextEncoder().encode(JSON.stringify(updates)).length;
+            if (size > 120 * 1024) {
+                return c.json({ success: false, error: `Payload too large (${(size/1024).toFixed(0)}KB). Limit ~128KB/entry. Compress previews.` }, 413);
+            }
+            const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
+            const data = await stub.updateMemory(id, updates);
+            return c.json({ success: true, data } satisfies ApiResponse<MemoryEntry[]>);
+        } catch (err: any) {
+            console.error('[UPDATE_MEMORY_ERROR]', err);
+            return c.json({ success: false, error: err.message || 'Failed to update memory' }, 500);
+        }
     });
     app.delete('/api/memories/:id', async (c) => {
         const id = c.req.param('id');
