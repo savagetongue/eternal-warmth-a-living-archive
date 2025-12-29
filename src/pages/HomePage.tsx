@@ -6,7 +6,7 @@ import { ComposeModal } from '@/components/ComposeModal';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
-import { Sparkles, Heart, Plus, Feather, ChevronDown, BookOpen, Loader2, Trash2 } from 'lucide-react';
+import { Sparkles, Heart, Plus, ChevronDown, BookOpen, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
@@ -146,9 +146,6 @@ export function HomePage() {
             <p className="text-2xl md:text-3xl text-muted-foreground/30 font-serif italic select-none leading-relaxed">Each moment a thread, each thread a forever.</p>
             <div className="flex flex-col items-center gap-8">
               <p className="text-[11px] uppercase tracking-[0.8em] text-peach/40 font-bold select-none">Eternal Warmth: A Living Archive</p>
-              <Button variant="ghost" onClick={async () => { if (window.confirm("Dissolve all memories forever?")) { try { const res = await fetch('/api/memories/clear', { method: 'DELETE' }); if ((await res.json()).success) { setMemories([]); updateLocalCache([]); toast.success("Archive cleared."); } } catch { toast.error("Archive inaccessible."); } } }} className="text-[9px] uppercase tracking-[0.4em] text-muted-foreground/20 hover:text-red-400/50 transition-all duration-700 font-black h-auto py-2">
-                <Trash2 className="w-4 h-4 mr-2" /> Reset Sanctuary
-              </Button>
             </div>
           </div>
         </footer>

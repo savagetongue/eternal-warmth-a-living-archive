@@ -27,11 +27,6 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
             return c.json({ success: false, error: err.message || 'Failed to save memory' }, 500);
         }
     });
-    app.delete('/api/memories/clear', async (c) => {
-        const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
-        const data = await stub.clearMemories();
-        return c.json({ success: true, data } satisfies ApiResponse<MemoryEntry[]>);
-    });
     app.get('/api/media/:type/:filename', async (c) => {
         const filename = c.req.param('filename');
         const type = c.req.param('type');
@@ -75,11 +70,9 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
             if (!file) return c.json({ success: false, error: 'No file provided' }, 400);
             const isVideo = file.type.startsWith('video/');
             const isLargeVideo = isVideo && file.size > MAX_PREVIEW_VIDEO_SIZE;
-            // If it's a large video, we return sandbox status to signal signature-only storage
             if (isLargeVideo) {
                 return c.json({ success: true, data: { status: 'sandbox', url: '' } });
             }
-            // Normal flow for images, audio, and small videos
             if (!c.env.MEMORIES_BUCKET) {
                 return c.json({ success: true, data: { status: 'sandbox', url: '' } });
             }
