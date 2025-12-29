@@ -23,54 +23,69 @@ export function TimeKeeper() {
     { label: 'Seconds', value: duration.seconds ?? 0 },
   ];
   return (
-    <div className="flex flex-col items-center justify-center space-y-12 py-12 md:py-24 lg:py-36 overflow-visible w-full">
-      <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center justify-center space-y-16 py-32 md:py-48 lg:py-64 overflow-visible w-full selection:bg-peach/30">
+      <div className="flex flex-col items-center gap-6">
         <motion.p
-          animate={{ opacity: [0.3, 0.8, 0.3], scale: [0.99, 1, 0.99] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.8em] text-peach italic ml-[0.8em] select-none"
+          animate={{ opacity: [0.4, 0.9, 0.4], y: [0, -2, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          className="text-[12px] md:text-[14px] lg:text-[16px] font-black uppercase tracking-[1em] text-peach italic ml-[1em] select-none text-center"
         >
-          Bonded for eternity
+          Our Bonded Eternity
         </motion.p>
-        <div className="h-[2px] w-16 md:w-24 bg-gradient-to-r from-transparent via-peach/30 to-transparent" />
+        <div className="h-[2px] w-32 md:w-48 bg-gradient-to-r from-transparent via-peach/40 to-transparent" />
       </div>
-      <div className="flex flex-row flex-wrap justify-center items-center gap-x-4 sm:gap-x-8 lg:gap-x-12 gap-y-8 sm:gap-y-12 max-w-7xl p-4 sm:p-8 w-full">
-        {displayUnits.map((unit) => (
-          <div key={unit.label} className="flex flex-col items-center flex-shrink-0">
-            <div className="relative overflow-visible h-16 sm:h-24 lg:h-36 flex items-center justify-center min-w-[2.2ch]">
+      <div className="flex flex-row flex-wrap justify-center items-center gap-x-12 sm:gap-x-16 lg:gap-x-24 gap-y-24 md:gap-y-32 max-w-[100rem] p-4 sm:p-12 w-full">
+        {displayUnits.map((unit, idx) => (
+          <div key={unit.label} className="flex flex-col items-center flex-shrink-0 group">
+            <div className="relative overflow-visible h-[8rem] sm:h-[12rem] lg:h-[16rem] xl:h-[20rem] flex items-center justify-center min-w-[2.5ch]">
+              {/* Majestic Radial Glow */}
+              <motion.div
+                animate={{ 
+                  scale: [1, 1.2, 1], 
+                  opacity: [0.1, 0.25, 0.1],
+                  rotate: [0, 5, 0]
+                }}
+                transition={{ 
+                  duration: 10 + idx, 
+                  repeat: Infinity, 
+                  ease: "easeInOut" 
+                }}
+                className={`absolute inset-0 blur-[60px] sm:blur-[100px] lg:blur-[140px] rounded-full -z-10 pointer-events-none ${
+                  idx % 2 === 0 ? 'bg-peach/40' : 'bg-mist/40'
+                }`}
+              />
               <div className="relative flex items-center justify-center tabular-nums overflow-visible">
                 <AnimatePresence mode="popLayout" initial={false}>
                   <motion.span
                     key={unit.value}
-                    initial={{ y: 15, opacity: 0, scale: 0.95, filter: "blur(2px)" }}
+                    initial={{ y: 40, opacity: 0, scale: 0.9, filter: "blur(10px)" }}
                     animate={{ y: 0, opacity: 1, scale: 1, filter: "blur(0px)" }}
-                    exit={{ y: -15, opacity: 0, scale: 0.95, filter: "blur(2px)" }}
+                    exit={{ y: -40, opacity: 0, scale: 0.9, filter: "blur(10px)" }}
                     transition={{
-                      duration: 0.4,
-                      ease: [0.34, 1.56, 0.64, 1],
+                      duration: 0.7,
+                      ease: [0.23, 1, 0.32, 1],
                     }}
-                    className="text-4xl sm:text-6xl lg:text-9xl font-mono font-black text-foreground tabular-nums tracking-[-0.05em] select-none whitespace-nowrap will-change-transform flex justify-center items-center w-[2ch]"
+                    className="text-7xl sm:text-[8rem] md:text-[10rem] lg:text-[14rem] xl:text-[18rem] font-display font-black text-foreground tabular-nums tracking-[-0.05em] select-none whitespace-nowrap will-change-transform flex justify-center items-center leading-none"
                   >
                     {(unit.value).toString().padStart(2, '0')}
                   </motion.span>
                 </AnimatePresence>
               </div>
-              <motion.div
-                animate={{ scale: [1, 1.4, 1], opacity: [0.05, 0.15, 0.05] }}
-                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute inset-0 bg-peach/40 blur-[40px] sm:blur-[80px] lg:blur-[120px] rounded-full -z-10 pointer-events-none"
-              />
             </div>
-            <span className="text-[8px] sm:text-xs lg:text-sm uppercase tracking-[0.3em] sm:tracking-[0.5em] text-muted-foreground/60 mt-4 sm:mt-6 lg:mt-8 font-black ml-[0.3em] sm:ml-[0.5em] select-none whitespace-nowrap">
+            <motion.span 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              className="text-sm sm:text-lg lg:text-2xl xl:text-3xl uppercase tracking-[0.4em] sm:tracking-[0.6em] text-muted-foreground mt-8 sm:mt-12 lg:mt-16 font-black ml-[0.6em] select-none whitespace-nowrap group-hover:text-peach group-hover:opacity-100 transition-all duration-700"
+            >
               {unit.label}
-            </span>
+            </motion.span>
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-5 pt-4 sm:pt-8 opacity-30 select-none">
-        <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-peach animate-ping" />
-        <span className="text-[8px] sm:text-[10px] font-serif italic text-foreground tracking-[0.3em] sm:tracking-[0.5em] uppercase font-bold">ticking forever</span>
-        <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-peach animate-ping" style={{ animationDelay: '1.5s' }} />
+      <div className="flex items-center gap-8 pt-12 md:pt-20 opacity-40 select-none">
+        <div className="w-2 h-2 rounded-full bg-peach animate-ping" />
+        <span className="text-[10px] md:text-[12px] font-serif italic text-foreground tracking-[0.6em] uppercase font-bold">Resonating Forever</span>
+        <div className="w-2 h-2 rounded-full bg-peach animate-ping" style={{ animationDelay: '2s' }} />
       </div>
     </div>
   );
