@@ -5,7 +5,6 @@ import { Quote, Pencil, Trash2, Music, Loader2, ImageIcon, Video } from 'lucide-
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
 interface MemoryCardProps {
   memory: MemoryEntry;
   index: number;
@@ -15,8 +14,6 @@ interface MemoryCardProps {
 export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory, index, onEdit, onDelete }, ref) => {
   const [isMediaLoading, setIsMediaLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-
-  // Reset loading states when memory changes (only for media types)
   useEffect(() => {
     if (memory.type !== 'text') {
       setIsMediaLoading(true);
@@ -41,12 +38,10 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       return isValid(date) ? format(date, 'MMMM do, yyyy') : "A special day";
     } catch { return "A special day"; }
   }, [memory.date]);
-  const handleDelete = async () => {
-    if (!window.confirm("Remove from our eternal archive?")) return;
-    try {
-      const res = await fetch(`/api/memories/${memory.id}`, { method: 'DELETE' });
-      if (res.ok) { toast.success("Memory returned to the stars."); onDelete?.(); }
-    } catch { toast.error("Could not reach the archive."); }
+  const confirmAndDelete = () => {
+    if (window.confirm("Remove from our eternal archive?")) {
+      onDelete?.();
+    }
   };
   return (
     <motion.div
@@ -61,7 +56,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
     >
       <div className="absolute top-6 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 flex gap-2 z-30">
         <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-warm-cream/80 backdrop-blur-sm border border-peach/20 text-peach" onClick={() => onEdit?.(memory)}><Pencil className="w-4 h-4" /></Button>
-        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-red-50/80 backdrop-blur-sm border border-red-100 text-red-400" onClick={handleDelete}><Trash2 className="w-4 h-4" /></Button>
+        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-red-50/80 backdrop-blur-sm border border-red-100 text-red-400" onClick={confirmAndDelete}><Trash2 className="w-4 h-4" /></Button>
       </div>
       <div className="mb-8 flex items-center gap-3">
         <div className="h-px flex-1 bg-peach/10" />
@@ -71,32 +66,13 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       {memory.type === 'video' && (
         <div className="space-y-8">
           <div className="relative overflow-hidden rounded-[2rem] aspect-video w-full bg-black border-4 border-warm-paper dark:border-zinc-900 shadow-inner" style={{ backgroundColor: fallbackColor }}>
-            {memory.previewUrl && (
-              <div className="absolute inset-0 z-0">
-                <img src={memory.previewUrl} className="w-full h-full object-cover blur-2xl opacity-40" alt="" />
-              </div>
-            )}
+            {memory.previewUrl && <div className="absolute inset-0 z-0"><img src={memory.previewUrl} className="w-full h-full object-cover blur-2xl opacity-40" alt="" /></div>}
             <video
-              src={memory.mediaUrl}
-              poster={memory.previewUrl}
-              controls
-              preload="metadata"
-              playsInline={true}
-              className={cn("relative z-10 w-full h-full object-contain transition-opacity duration-1000", isMediaLoading ? "opacity-0" : "opacity-100")}
-              onLoadedData={() => setIsMediaLoading(false)}
-              onError={() => { setIsMediaLoading(false); setHasError(true); }}
+              src={memory.mediaUrl} poster={memory.previewUrl} controls preload="metadata" playsInline className={cn("relative z-10 w-full h-full object-contain transition-opacity duration-1000", isMediaLoading ? "opacity-0" : "opacity-100")}
+              onLoadedData={() => setIsMediaLoading(false)} onError={() => { setIsMediaLoading(false); setHasError(true); }}
             />
-            {isMediaLoading && !hasError && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-peach animate-spin" />
-              </div>
-            )}
-            {hasError && (
-              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-zinc-900/60 backdrop-blur-sm">
-                <Video className="w-12 h-12 text-peach/40 mb-2" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-peach/40">Visual Echo Archived</span>
-              </div>
-            )}
+            {isMediaLoading && !hasError && <div className="absolute inset-0 z-20 flex items-center justify-center"><Loader2 className="w-8 h-8 text-peach animate-spin" /></div>}
+            {hasError && <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-zinc-900/60 backdrop-blur-sm"><Video className="w-12 h-12 text-peach/40 mb-2" /><span className="text-[10px] font-black uppercase tracking-widest text-peach/40">Visual Echo Archived</span></div>}
           </div>
           <p className="text-xl md:text-3xl font-serif italic text-center text-foreground/90 whitespace-pre-wrap break-words px-4">"{memory.content}"</p>
         </div>
@@ -104,11 +80,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       {memory.type === 'image' && (
         <div className="space-y-8">
           <div className="relative overflow-hidden rounded-[2rem] aspect-video w-full border-4 border-warm-paper dark:border-zinc-900" style={{ backgroundColor: fallbackColor }}>
-            {memory.previewUrl && (
-              <div className="absolute inset-0 z-0">
-                <img src={memory.previewUrl} className="w-full h-full object-cover blur-2xl opacity-40" alt="" />
-              </div>
-            )}
+            {memory.previewUrl && <div className="absolute inset-0 z-0"><img src={memory.previewUrl} className="w-full h-full object-cover blur-2xl opacity-40" alt="" /></div>}
             {memory.mediaUrl && !hasError && (
               <img
                 src={memory.mediaUrl} alt="Archive" className={cn("relative z-10 w-full h-full object-contain transition-opacity duration-1000", isMediaLoading ? "opacity-0" : "opacity-100")}
@@ -136,17 +108,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                 {memory.fileName && <span className="text-[9px] text-muted-foreground truncate max-w-[150px]">{memory.fileName}</span>}
               </div>
             </div>
-            {memory.mediaUrl && !hasError ? (
-              <audio 
-                src={memory.mediaUrl} 
-                controls 
-                className="w-full relative z-10 opacity-80"
-                onError={() => { setIsMediaLoading(false); setHasError(true); }}
-                preload="metadata"
-              />
-            ) : (
-              <div className="w-full h-16 bg-white/40 rounded-2xl border-2 border-dashed border-peach/20 relative z-10" />
-            )}
+            {memory.mediaUrl && !hasError ? <audio src={memory.mediaUrl} controls className="w-full relative z-10 opacity-80" onError={() => { setIsMediaLoading(false); setHasError(true); }} preload="metadata" /> : <div className="w-full h-16 bg-white/40 rounded-2xl border-2 border-dashed border-peach/20 relative z-10" />}
           </div>
         </div>
       )}
