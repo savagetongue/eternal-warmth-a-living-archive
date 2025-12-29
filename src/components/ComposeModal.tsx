@@ -68,7 +68,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       const fallbackColor = predictedType === 'video' ? '#A1C4FD' : predictedType === 'audio' ? '#FF9A9E' : '#FDFBF7';
       if (predictedType === 'image') {
         const img = new Image();
-        img.onload = () => resolve({ 
+        img.onload = () => resolve({
           base64Thumb: (() => {
             const canvas = document.createElement('canvas');
             const scale = 400 / Math.max(img.width, img.height);
@@ -76,8 +76,8 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
             canvas.height = img.height * scale;
             canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height);
             return canvas.toDataURL('image/jpeg', 0.8);
-          })(), 
-          color: extractDominantColor(img) 
+          })(),
+          color: extractDominantColor(img)
         });
         img.onerror = () => resolve({ base64Thumb: '', color: fallbackColor });
         img.src = objectUrl;
@@ -133,15 +133,20 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     if (!content.trim() || isSubmitting) return;
     setIsSubmitting(true);
     let finalMediaUrl = mediaUrl;
+    let isPersisted = !!mediaUrl;
     try {
       if (selectedFile) {
         const formData = new FormData();
         formData.append('file', selectedFile);
         const uploadRes = await fetch('/api/memories/upload', { method: 'POST', body: formData });
         const uploadJson = await uploadRes.json();
-        // If upload failed or returned no URL (Sandbox), finalMediaUrl stays empty
-        if (uploadJson.success && uploadJson.data?.url) finalMediaUrl = uploadJson.data.url;
-        else if (uploadJson.data?.status === 'sandbox') finalMediaUrl = ''; 
+        if (uploadJson.success && uploadJson.data?.url) {
+          finalMediaUrl = uploadJson.data.url;
+          isPersisted = true;
+        } else if (uploadJson.data?.status === 'sandbox') {
+          finalMediaUrl = ''; // Clear mediaUrl to trigger signature fallback in MemoryCard
+          isPersisted = false;
+        }
       }
       const entryData: MemoryEntry = {
         id: initialData?.id || uuidv4(), content: content.trim(), type,
@@ -156,7 +161,15 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
         body: JSON.stringify(entryData),
         headers: { 'Content-Type': 'application/json' }
       });
-      if (res.ok) { toast.success("Archive updated."); onOpenChange(false); onSuccess(); }
+      if (res.ok) { 
+        if (type !== 'text' && !isPersisted) {
+          toast.success("Signature captured for the archive.");
+        } else {
+          toast.success("Memory sealed in the archive."); 
+        }
+        onOpenChange(false); 
+        onSuccess(); 
+      }
       else throw new Error("Write failed");
     } catch { toast.error("Connection lost."); } finally { setIsSubmitting(false); }
   };
@@ -186,6 +199,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
                 </div>
                 {previewUrl && <img src={previewUrl} className="w-20 h-20 rounded-lg object-cover border-2 border-white shadow-md relative z-10" alt="Captured" />}
                 <input type="file" ref={fileInputRef} className="hidden" accept={type === 'audio' ? 'audio/*' : type === 'video' ? 'video/*' : 'image/*'} onChange={handleFileChange} disabled={isProcessing} />
+                {type === 'video' && <p className="text-[9px] text-muted-foreground mt-2 font-bold uppercase tracking-tighter relative z-10">Videos &lt;5MB preserved in preview</p>}
               </div>
             </div>
           )}

@@ -1,7 +1,7 @@
 import React, { forwardRef, useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO, isValid } from 'date-fns';
-import { Quote, Pencil, Trash2, Music, Loader2, ImageIcon, Video, ShieldCheck } from 'lucide-react';
+import { Quote, Pencil, Trash2, Music, Loader2, Video, ShieldCheck } from 'lucide-react';
 import type { MemoryEntry } from '@shared/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -19,9 +19,8 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
     if (memory.type !== 'text') {
       setIsMediaLoading(true);
       setHasError(false);
-      // Check if mediaUrl is missing or a known placeholder
-      const isMissing = !memory.mediaUrl || memory.mediaUrl === '' || memory.mediaUrl.includes('BigBuckBunny');
-      setIsSandbox(isMissing);
+      // isSandbox is true if we have no actual media URL to play
+      setIsSandbox(!memory.mediaUrl || memory.mediaUrl === '');
     } else {
       setIsMediaLoading(false);
     }
@@ -43,10 +42,10 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
     <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] p-6 text-center">
       <div className="bg-white/90 dark:bg-zinc-900/90 rounded-full px-4 py-2 flex items-center gap-2 border border-peach/30 shadow-xl mb-4">
         <ShieldCheck className="w-4 h-4 text-peach" />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground">Digital Signature</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest text-foreground">Deploy for Full Media</span>
       </div>
       <p className="text-white text-xs md:text-sm font-serif italic max-w-xs drop-shadow-md">
-        This high-fidelity signature captures the essence of the memory. Full media available on final deployment.
+        This high-fidelity signature captures the essence of the memory. Full media will be available on final deployment.
       </p>
     </div>
   );
@@ -85,9 +84,21 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                 {renderSignatureOverlay()}
               </>
             ) : memory.type === 'video' ? (
-              <video src={memory.mediaUrl} poster={memory.previewUrl} controls className={cn("relative z-10 w-full h-full object-contain transition-opacity", isMediaLoading ? "opacity-0" : "opacity-100")} onLoadedData={() => setIsMediaLoading(false)} onError={() => { setIsMediaLoading(false); setHasError(true); }} />
+              <video 
+                src={memory.mediaUrl} 
+                poster={memory.previewUrl} 
+                controls 
+                className={cn("relative z-10 w-full h-full object-contain transition-opacity", isMediaLoading ? "opacity-0" : "opacity-100")} 
+                onLoadedData={() => setIsMediaLoading(false)} 
+                onError={() => { setIsMediaLoading(false); setHasError(true); }} 
+              />
             ) : (
-              <img src={memory.mediaUrl} className={cn("relative z-10 w-full h-full object-contain transition-opacity", isMediaLoading ? "opacity-0" : "opacity-100")} onLoad={() => setIsMediaLoading(false)} onError={() => { setIsMediaLoading(false); setHasError(true); }} />
+              <img 
+                src={memory.mediaUrl} 
+                className={cn("relative z-10 w-full h-full object-contain transition-opacity", isMediaLoading ? "opacity-0" : "opacity-100")} 
+                onLoad={() => setIsMediaLoading(false)} 
+                onError={() => { setIsMediaLoading(false); setHasError(true); }} 
+              />
             )}
             {hasError && !isSandbox && <div className="absolute inset-0 z-20 flex items-center justify-center bg-zinc-900/60 backdrop-blur-sm"><Video className="w-12 h-12 text-peach/40" /></div>}
           </div>

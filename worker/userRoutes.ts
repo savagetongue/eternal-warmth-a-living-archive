@@ -5,6 +5,7 @@ import type { R2Bucket } from '@cloudflare/workers-types';
 type ExtendedEnv = Env & {
   MEMORIES_BUCKET?: R2Bucket;
 };
+const MAX_PREVIEW_VIDEO_SIZE = 5 * 1024 * 1024; // 5MB
 export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
     app.get('/api/memories', async (c) => {
         const stub = c.env.GlobalDurableObject.get(c.env.GlobalDurableObject.idFromName("global"));
@@ -63,9 +64,14 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
             const formData = await c.req.formData();
             const file = formData.get('file') as File;
             if (!file) return c.json({ success: false, error: 'No file provided' }, 400);
-            // Check if bucket exists
+            const isVideo = file.type.startsWith('video/');
+            const isLargeVideo = isVideo && file.size > MAX_PREVIEW_VIDEO_SIZE;
+            // If it's a large video, we return sandbox status to signal signature-only storage
+            if (isLargeVideo) {
+                return c.json({ success: true, data: { status: 'sandbox', url: '' } });
+            }
+            // Normal flow for images, audio, and small videos
             if (!c.env.MEMORIES_BUCKET) {
-                // Return Sandbox status to let frontend know we only save metadata/signatures
                 return c.json({ success: true, data: { status: 'sandbox', url: '' } });
             }
             const uuid = crypto.randomUUID();
