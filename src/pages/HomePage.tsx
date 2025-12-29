@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { TimeKeeper } from '@/components/TimeKeeper';
 import { MemoryCard } from '@/components/MemoryCard';
@@ -23,6 +23,7 @@ export function HomePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [editingMemory, setEditingMemory] = useState<MemoryEntry | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const isInitialSyncDone = useRef(false);
   const updateLocalCache = (data: MemoryEntry[]) => {
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify(data));
@@ -47,11 +48,13 @@ export function HomePage() {
     }
   }, []);
   useEffect(() => {
-    // Initial silent sync on mount after hydration
-    fetchMemories(memories.length > 0);
-  }, [fetchMemories]);
+    if (!isInitialSyncDone.current) {
+      // Initial silent sync on mount after hydration
+      fetchMemories(memories.length > 0);
+      isInitialSyncDone.current = true;
+    }
+  }, [fetchMemories, memories.length]);
   const handleDeleteMemory = async (id: string) => {
-    // Optimistic Update
     const previousMemories = [...memories];
     const filteredMemories = memories.filter(m => m.id !== id);
     setMemories(filteredMemories);
@@ -61,7 +64,6 @@ export function HomePage() {
       if (!res.ok) throw new Error("Delete failed");
       toast.success("Memory returned to the stars.");
     } catch (err) {
-      // Rollback
       setMemories(previousMemories);
       updateLocalCache(previousMemories);
       toast.error("The archive resisted the change. Rollback initiated.");
@@ -76,7 +78,6 @@ export function HomePage() {
     setIsModalOpen(true);
   };
   const handleSuccess = async () => {
-    // High priority background sync
     await fetchMemories(true);
   };
   const handleClearArchive = async () => {
