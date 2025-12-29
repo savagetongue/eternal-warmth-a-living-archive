@@ -107,7 +107,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
               onLoadedData={() => setIsMediaLoading(false)}
               onError={() => { setIsMediaLoading(false); setHasError(true); }}
             />
-            {hasError && <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-zinc-900/60 backdrop-blur-sm"><Video className="w-12 h-12 text-peach/40 mb-2" /><span className="text-[10px] font-black uppercase tracking-widest text-peach/40">Visual Echo Unavailable</span></div>}
+            {hasError && <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-zinc-900/60 backdrop-blur-sm"><Video className="w-12 h-12 text-peach/40" /></div>}
           </div>
           <p className="text-xl md:text-3xl font-serif italic text-center text-foreground/90 whitespace-pre-wrap break-words px-4">"{memory.content}"</p>
         </div>

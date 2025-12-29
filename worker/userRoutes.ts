@@ -107,7 +107,7 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
                 });
                 uploadUrl = `/api/media/${type}/${filename}`;
             } else {
-                if (isVideo) uploadUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+                if (isVideo) uploadUrl = 'https://media.w3c.org/2010/05/sintel/trailer_hd.mp4';
                 else if (isAudio) uploadUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
                 else uploadUrl = 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&q=80&w=800';
             }
