@@ -26,32 +26,23 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
         const filename = c.req.param('filename');
         const type = c.req.param('type');
         const key = `${type}/${filename}`;
-        if (!c.env.MEMORIES_BUCKET) {
-            return c.json({ success: false, error: 'Storage not configured' }, 503);
-        }
+        if (!c.env.MEMORIES_BUCKET) return c.json({ success: false, error: 'Storage not configured' }, 503);
         const object = await c.env.MEMORIES_BUCKET.get(key);
-        if (!object) {
-            return c.json({ success: false, error: 'Not Found' }, 404);
-        }
+        if (!object) return c.json({ success: false, error: 'Not Found' }, 404);
         const headers = new Headers();
         object.writeHttpMetadata(headers as any);
         headers.set('etag', object.httpEtag);
         headers.set('Cache-Control', 'public, max-age=31536000, immutable');
         headers.set('Access-Control-Allow-Origin', '*');
         headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
-        headers.set('Access-Control-Expose-Headers', 'ETag, Content-Length, Content-Range, Accept-Ranges');
         const rangeStr = c.req.header('Range');
         if (rangeStr?.startsWith('bytes=')) {
             const parts = rangeStr.slice(6).split('-');
-            let start = parseInt(parts[0], 10);
+            let start = parts[0] ? parseInt(parts[0], 10) : 0;
             let end = parts[1] ? parseInt(parts[1], 10) : object.size - 1;
-            // Handle suffix-byte-range-spec (e.g. bytes=-500)
-            if (parts[0] === '' && parts[1]) {
-                const length = parseInt(parts[1], 10);
-                if (!isNaN(length) && length > 0) {
-                    start = Math.max(0, object.size - length);
-                    end = object.size - 1;
-                }
+            if (isNaN(start) && parts[1]) {
+              start = object.size - parseInt(parts[1], 10);
+              end = object.size - 1;
             }
             if (!isNaN(start) && start >= 0 && start < object.size) {
                 end = Math.min(end, object.size - 1);
@@ -59,70 +50,33 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
                 headers.set('Content-Range', `bytes ${start}-${end}/${object.size}`);
                 headers.set('Content-Length', chunkSize.toString());
                 headers.set('Accept-Ranges', 'bytes');
-                const rangeObj = await c.env.MEMORIES_BUCKET.get(key, {
-                  range: { offset: start, length: chunkSize }
-                });
-                if (rangeObj && rangeObj.body) {
-                    return new Response(rangeObj.body as any, {
-                        status: 206,
-                        headers: headers as any
-                    });
-                }
+                const rangeObj = await c.env.MEMORIES_BUCKET.get(key, { range: { offset: start, length: chunkSize } });
+                if (rangeObj?.body) return new Response(rangeObj.body as any, { status: 206, headers: headers as any });
             }
-        }
-        const ext = filename.split('.').pop()?.toLowerCase();
-        const mimeMap: Record<string, string> = {
-            'mp4': 'video/mp4',
-            'mp3': 'audio/mpeg',
-            'jpg': 'image/jpeg',
-            'jpeg': 'image/jpeg',
-            'png': 'image/png',
-            'webp': 'image/webp',
-            'gif': 'image/gif'
-        };
-        if (ext && mimeMap[ext]) {
-            headers.set('Content-Type', mimeMap[ext]);
         }
         headers.set('Accept-Ranges', 'bytes');
         headers.set('Content-Length', object.size.toString());
-        return new Response(object.body as any, {
-            headers: headers as any
-        });
+        return new Response(object.body as any, { headers: headers as any });
     });
     app.post('/api/memories/upload', async (c) => {
         try {
             const formData = await c.req.formData();
             const file = formData.get('file') as File;
-            if (!file) {
-                return c.json({ success: false, error: 'No file provided' }, 400);
+            if (!file) return c.json({ success: false, error: 'No file provided' }, 400);
+            // Check if bucket exists
+            if (!c.env.MEMORIES_BUCKET) {
+                // Return Sandbox status to let frontend know we only save metadata/signatures
+                return c.json({ success: true, data: { status: 'sandbox', url: '' } });
             }
             const uuid = crypto.randomUUID();
             const safeName = file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+            const type = file.type.split('/')[0] || 'image';
             const filename = `${uuid}-${safeName}`;
-            const getMediaType = (file: File): 'video' | 'audio' | 'image' => {
-                const ext = file.name.split('.').pop()?.toLowerCase();
-                const videoExts = ['mp4','webm','mov','avi','mkv','3gp','flv','wmv','ogv'];
-                const audioExts = ['mp3','wav','aac','m4a','ogg','flac','wma'];
-                const imageExts = ['jpg','jpeg','png','gif','webp','bmp','tiff','svg','heic'];
-                
-                if (file.type.startsWith('video/') || (ext && videoExts.includes(ext))) return 'video';
-                if (file.type.startsWith('audio/') || (ext && audioExts.includes(ext))) return 'audio';
-                return 'image';
-            };
-            const type = getMediaType(file);
             const key = `${type}/${filename}`;
-            let uploadUrl = '';
-            if (c.env.MEMORIES_BUCKET) {
-                await c.env.MEMORIES_BUCKET.put(key, await file.arrayBuffer(), {
-                    httpMetadata: { contentType: file.type }
-                });
-                uploadUrl = `/api/media/${type}/${filename}`;
-            } else {
-                if (type === 'video') uploadUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
-                else if (type === 'audio') uploadUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
-                else uploadUrl = 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&q=80&w=800';
-            }
-            return c.json({ success: true, data: { url: uploadUrl } });
+            await c.env.MEMORIES_BUCKET.put(key, await file.arrayBuffer(), {
+                httpMetadata: { contentType: file.type }
+            });
+            return c.json({ success: true, data: { url: `/api/media/${type}/${filename}` } });
         } catch (err) {
             console.error('[UPLOAD ERROR]', err);
             return c.json({ success: false, error: 'Internal upload failure' }, 500);
