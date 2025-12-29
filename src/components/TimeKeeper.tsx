@@ -23,48 +23,47 @@ export function TimeKeeper() {
     { label: 'Seconds', value: duration.seconds ?? 0 },
   ];
   return (
-    <div className="flex flex-col items-center justify-center space-y-16 py-32 md:py-48 lg:py-64 overflow-visible w-full selection:bg-peach/30">
-      <div className="flex flex-col items-center gap-6">
+    <div className="flex flex-col items-center justify-center space-y-10 py-16 md:py-24 lg:py-32 overflow-visible w-full selection:bg-peach/30">
+      <div className="flex flex-col items-center gap-4">
         <motion.p
           animate={{ opacity: [0.4, 0.9, 0.4], y: [0, -2, 0] }}
           transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="text-[10px] sm:text-[12px] md:text-[14px] lg:text-[16px] font-black uppercase tracking-[1em] text-peach italic ml-[1em] select-none text-center"
+          className="text-[10px] md:text-[12px] font-black uppercase tracking-[0.8em] text-peach italic ml-[0.8em] select-none text-center"
         >
           Our Bonded Eternity
         </motion.p>
-        <div className="h-[2px] w-24 sm:w-32 md:w-48 bg-gradient-to-r from-transparent via-peach/40 to-transparent" />
+        <div className="h-[1px] w-16 md:w-24 bg-gradient-to-r from-transparent via-peach/30 to-transparent" />
       </div>
-      <div className="flex flex-row flex-wrap justify-center items-center gap-x-8 sm:gap-x-16 lg:gap-x-24 gap-y-16 md:gap-y-32 max-w-[100rem] p-4 sm:p-12 w-full">
+      <div className="flex flex-row flex-wrap justify-center items-center gap-x-6 sm:gap-x-12 lg:gap-x-16 gap-y-10 max-w-7xl p-4 w-full">
         {displayUnits.map((unit, idx) => (
-          <div key={unit.label} className="flex flex-col items-center flex-shrink-0 group w-[33%] sm:w-auto">
-            <div className="relative overflow-visible h-[5rem] sm:h-[12rem] lg:h-[16rem] xl:h-[20rem] flex items-center justify-center min-w-[2ch] tabular-nums">
+          <div key={unit.label} className="flex flex-col items-center flex-shrink-0 group w-[30%] sm:w-auto">
+            <div className="relative overflow-visible h-16 sm:h-24 lg:h-28 xl:h-32 flex items-center justify-center min-w-[2ch] tabular-nums">
               <motion.div
                 animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.1, 0.25, 0.1],
-                  rotate: [0, 5, 0]
+                  scale: [1, 1.15, 1],
+                  opacity: [0.1, 0.2, 0.1],
                 }}
                 transition={{
-                  duration: 10 + idx,
+                  duration: 8 + idx,
                   repeat: Infinity,
                   ease: "easeInOut"
                 }}
-                className={`absolute inset-0 blur-[40px] sm:blur-[100px] lg:blur-[140px] rounded-full -z-10 pointer-events-none ${
-                  idx % 2 === 0 ? 'bg-peach/40' : 'bg-mist/40'
+                className={`absolute inset-0 blur-[30px] sm:blur-[60px] lg:blur-[80px] rounded-full -z-10 pointer-events-none ${
+                  idx % 2 === 0 ? 'bg-peach/30' : 'bg-mist/30'
                 }`}
               />
               <div className="relative flex items-center justify-center tabular-nums overflow-visible">
                 <AnimatePresence mode="popLayout" initial={false}>
                   <motion.span
                     key={unit.value}
-                    initial={{ y: 20, opacity: 0, scale: 0.95, filter: "blur(5px)" }}
-                    animate={{ y: 0, opacity: 1, scale: 1, filter: "blur(0px)" }}
-                    exit={{ y: -20, opacity: 0, scale: 0.95, filter: "blur(5px)" }}
+                    initial={{ y: 15, opacity: 0, scale: 0.95 }}
+                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                    exit={{ y: -15, opacity: 0, scale: 0.95 }}
                     transition={{
-                      duration: 0.5,
+                      duration: 0.4,
                       ease: [0.23, 1, 0.32, 1],
                     }}
-                    className="text-4xl sm:text-[8rem] md:text-[10rem] lg:text-[14rem] xl:text-[18rem] font-display font-black text-foreground tabular-nums tracking-[-0.05em] select-none whitespace-nowrap will-change-transform flex justify-center items-center leading-none"
+                    className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-display font-black text-foreground tabular-nums tracking-tighter select-none whitespace-nowrap will-change-transform flex justify-center items-center leading-none"
                   >
                     {(unit.value).toString().padStart(2, '0')}
                   </motion.span>
@@ -73,18 +72,18 @@ export function TimeKeeper() {
             </div>
             <motion.span
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
-              className="text-[8px] sm:text-lg lg:text-2xl xl:text-3xl uppercase tracking-[0.2em] sm:tracking-[0.6em] text-muted-foreground mt-4 sm:mt-12 lg:mt-16 font-black sm:ml-[0.6em] select-none whitespace-nowrap group-hover:text-peach group-hover:opacity-100 transition-all duration-700"
+              animate={{ opacity: 0.5 }}
+              className="text-xs sm:text-sm lg:text-base uppercase tracking-widest text-muted-foreground mt-2 sm:mt-4 font-bold select-none whitespace-nowrap group-hover:text-peach group-hover:opacity-100 transition-all duration-500"
             >
               {unit.label}
             </motion.span>
           </div>
         ))}
       </div>
-      <div className="flex items-center gap-8 pt-12 md:pt-20 opacity-40 select-none">
-        <div className="w-2 h-2 rounded-full bg-peach animate-ping" />
-        <span className="text-[9px] md:text-[12px] font-serif italic text-foreground tracking-[0.4em] sm:tracking-[0.6em] uppercase font-bold">Resonating Forever</span>
-        <div className="w-2 h-2 rounded-full bg-peach animate-ping" style={{ animationDelay: '2s' }} />
+      <div className="flex items-center gap-4 pt-8 opacity-30 select-none">
+        <div className="w-1.5 h-1.5 rounded-full bg-peach animate-ping" />
+        <span className="text-[9px] md:text-[10px] font-serif italic text-foreground tracking-[0.3em] uppercase font-bold">Resonating Forever</span>
+        <div className="w-1.5 h-1.5 rounded-full bg-peach animate-ping" style={{ animationDelay: '2s' }} />
       </div>
     </div>
   );
