@@ -26,7 +26,6 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const [type, setType] = useState<MemoryType>('text');
   const [mediaUrl, setMediaUrl] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
-  const [livePreviewUrl, setLivePreviewUrl] = useState('');
   const [dominantColor, setDominantColor] = useState('');
   const [currentFileName, setCurrentFileName] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -49,8 +48,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       ctx.drawImage(img, 0, 0, 1, 1);
       const data = ctx.getImageData(0, 0, 1, 1).data;
       const toHex = (c: number) => c.toString(16).padStart(2, '0');
-      const hex = `#${toHex(data[0])}${toHex(data[1])}${toHex(data[2])}`;
-      return hex.startsWith('#') && hex.length === 7 ? hex : '#FDFBF7';
+      return `#${toHex(data[0])}${toHex(data[1])}${toHex(data[2])}`;
     } catch { return '#FDFBF7'; }
   };
   const generateThumbnailFromSource = (source: HTMLImageElement | HTMLVideoElement): string => {
@@ -58,15 +56,18 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       const canvas = document.createElement('canvas');
       const sourceWidth = (source as any).naturalWidth || (source as any).videoWidth || source.width || 400;
       const sourceHeight = (source as any).naturalHeight || (source as any).videoHeight || source.height || 225;
-      const targetWidth = Math.min(400, sourceWidth);
+      const targetWidth = Math.min(800, sourceWidth);
       const scaleFactor = targetWidth / sourceWidth;
       const targetHeight = Math.floor(sourceHeight * scaleFactor);
-      canvas.width = targetWidth; canvas.height = targetHeight;
+      canvas.width = targetWidth; 
+      canvas.height = targetHeight;
       const ctx = canvas.getContext('2d');
       if (!ctx) return '';
       ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(source, 0, 0, targetWidth, targetHeight);
-      return canvas.toDataURL('image/jpeg', 0.4);
+      // High fidelity signature capture
+      return canvas.toDataURL('image/jpeg', 0.95);
     } catch { return ''; }
   };
   const generateSignature = (file: File): Promise<{ blobUrl: string; base64Thumb: string; color: string; autoType: MemoryType }> => {
@@ -90,11 +91,23 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
         const video = document.createElement('video');
         video.preload = 'metadata'; video.muted = true;
         const timeout = setTimeout(() => resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor, autoType }), 10000);
-        video.onloadedmetadata = () => { video.currentTime = 0.5; };
+        video.onloadedmetadata = () => {
+          // Seek to 0.5s to get a meaningful frame
+          video.currentTime = 0.5;
+        };
         video.onseeked = () => {
           clearTimeout(timeout);
-          resolve({ blobUrl: objectUrl, base64Thumb: generateThumbnailFromSource(video), color: extractDominantColor(video as any), autoType });
+          resolve({ 
+            blobUrl: objectUrl, 
+            base64Thumb: generateThumbnailFromSource(video), 
+            color: extractDominantColor(video as any), 
+            autoType 
+          });
           video.remove();
+        };
+        video.onerror = () => {
+          clearTimeout(timeout);
+          resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor, autoType });
         };
         video.src = objectUrl;
       } else {
@@ -104,7 +117,6 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   };
   const resetForm = useCallback(() => {
     cleanupObjectUrls();
-    setLivePreviewUrl('');
     setSelectedFile(null);
     if (initialData) {
       setContent(initialData.content); setType(initialData.type);
@@ -125,8 +137,8 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     setSelectedFile(file); setCurrentFileName(file.name);
     setIsProcessing(true); setSignatureCaptured(false);
     try {
-      const { blobUrl, base64Thumb, color, autoType } = await generateSignature(file);
-      setLivePreviewUrl(blobUrl); setPreviewUrl(base64Thumb); setDominantColor(color);
+      const { base64Thumb, color, autoType } = await generateSignature(file);
+      setPreviewUrl(base64Thumb); setDominantColor(color);
       setType(autoType); setSignatureCaptured(true);
       toast.success(`${autoType.charAt(0).toUpperCase() + autoType.slice(1)} signature captured.`);
     } catch { toast.error("Processing failed."); } finally { setIsProcessing(false); }

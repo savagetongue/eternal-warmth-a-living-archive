@@ -50,9 +50,8 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
                 headers.set('Content-Range', `bytes ${start}-${end}/${object.size}`);
                 headers.set('Content-Length', chunkSize.toString());
                 headers.set('Accept-Ranges', 'bytes');
-                // Using standard R2Range interface: { offset, length }
-                const rangeObj = await c.env.MEMORIES_BUCKET.get(key, { 
-                  range: { offset: start, length: chunkSize } 
+                const rangeObj = await c.env.MEMORIES_BUCKET.get(key, {
+                  range: { offset: start, length: chunkSize }
                 });
                 if (rangeObj && rangeObj.body) {
                     return new Response(rangeObj.body as any, {
@@ -91,7 +90,9 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
             const isVideo = file.type.startsWith('video/');
             const isAudio = file.type.startsWith('audio/');
             const uuid = crypto.randomUUID();
-            const filename = `${uuid}.${extension}`;
+            // Hardened naming pattern for uniqueness and storage precision
+            const safeName = file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+            const filename = `${uuid}-${safeName}`;
             const type = isVideo ? 'video' : isAudio ? 'audio' : 'image';
             const key = `${type}/${filename}`;
             let uploadUrl = '';
@@ -101,6 +102,7 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
                 });
                 uploadUrl = `/api/media/${type}/${filename}`;
             } else {
+                // Fallbacks if R2 is missing during local dev
                 if (isVideo) uploadUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
                 else if (isAudio) uploadUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
                 else uploadUrl = 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&q=80&w=800';

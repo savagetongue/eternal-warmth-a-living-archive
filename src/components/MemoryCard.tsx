@@ -49,7 +49,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       )}
     >
       <div className="absolute top-6 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 flex gap-2 z-30">
-        <motion.div whileHover={{ scale: 1.1 }} whileActive={{ scale: 0.9 }}>
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
           <Button
             variant="ghost"
             size="icon"
@@ -60,7 +60,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
             <Pencil className="w-4 h-4" />
           </Button>
         </motion.div>
-        <motion.div whileHover={{ scale: 1.1 }} whileActive={{ scale: 0.9 }}>
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
           <Button
             variant="ghost"
             size="icon"
@@ -90,7 +90,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                   className="absolute inset-0 z-20 flex items-center justify-center bg-inherit"
                 >
                   {memory.previewUrl && (
-                    <img src={memory.previewUrl} className="absolute inset-0 w-full h-full object-cover blur-xl opacity-30" alt="" />
+                    <img src={memory.previewUrl} className="absolute inset-0 w-full h-full object-cover blur-md opacity-30" alt="" />
                   )}
                   <Loader2 className="w-8 h-8 text-peach animate-spin relative z-10" />
                 </motion.div>
@@ -124,7 +124,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                   className="absolute inset-0 z-20 flex items-center justify-center bg-inherit"
                 >
                   {memory.previewUrl && (
-                    <img src={memory.previewUrl} className="absolute inset-0 w-full h-full object-cover blur-xl opacity-30" alt="" />
+                    <img src={memory.previewUrl} className="absolute inset-0 w-full h-full object-cover blur-md opacity-30" alt="" />
                   )}
                   <Loader2 className="w-8 h-8 text-peach animate-spin relative z-10" />
                 </motion.div>
@@ -153,7 +153,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
           <div className="relative p-8 rounded-[2.5rem] border border-peach/10 flex flex-col items-center gap-6 overflow-hidden bg-warm-paper/50 dark:bg-zinc-900/50">
             <div className="absolute inset-0 opacity-20 transition-colors duration-500" style={{ backgroundColor: fallbackColor }} />
             <div className="flex items-center gap-4 relative z-10">
-              <div className="p-4 rounded-full bg-white dark:bg-zinc-800 text-peach shadow-sm animate-pulse">
+              <div className="p-4 rounded-full bg-white dark:bg-zinc-800 text-peach shadow-sm">
                 <Music className="w-6 h-6 animate-slow-spin" />
               </div>
               <div className="flex flex-col">
