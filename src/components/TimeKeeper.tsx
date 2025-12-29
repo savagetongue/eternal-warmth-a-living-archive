@@ -34,9 +34,9 @@ export function TimeKeeper() {
         </motion.p>
         <div className="h-[1px] w-16 md:w-24 bg-gradient-to-r from-transparent via-peach/30 to-transparent" />
       </div>
-      <div className="flex flex-row flex-wrap justify-center items-center gap-x-6 sm:gap-x-12 lg:gap-x-16 gap-y-10 max-w-7xl p-4 w-full">
+      <div className="flex flex-row flex-wrap justify-center items-center gap-x-4 sm:gap-x-12 lg:gap-x-16 gap-y-10 max-w-7xl p-4 w-full">
         {displayUnits.map((unit, idx) => (
-          <div key={unit.label} className="flex flex-col items-center flex-shrink-0 group w-[30%] sm:w-auto">
+          <div key={unit.label} className="flex flex-col items-center flex-shrink-0 group w-[45%] sm:w-auto">
             <div className="relative overflow-visible h-16 sm:h-24 lg:h-28 xl:h-32 flex items-center justify-center min-w-[2ch] tabular-nums">
               <motion.div
                 animate={{
@@ -56,14 +56,14 @@ export function TimeKeeper() {
                 <AnimatePresence mode="popLayout" initial={false}>
                   <motion.span
                     key={unit.value}
-                    initial={{ y: 15, opacity: 0, scale: 0.95 }}
+                    initial={{ y: 20, opacity: 0, scale: 0.9 }}
                     animate={{ y: 0, opacity: 1, scale: 1 }}
-                    exit={{ y: -15, opacity: 0, scale: 0.95 }}
+                    exit={{ y: -20, opacity: 0, scale: 0.9 }}
                     transition={{
-                      duration: 0.4,
-                      ease: [0.23, 1, 0.32, 1],
+                      duration: 0.5,
+                      ease: [0.33, 1, 0.68, 1],
                     }}
-                    className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-display font-black text-foreground tabular-nums tracking-tighter select-none whitespace-nowrap will-change-transform flex justify-center items-center leading-none"
+                    className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-display font-black text-foreground tabular-nums tracking-tighter select-none whitespace-nowrap will-change-transform flex justify-center items-center leading-none min-w-[1.2em]"
                   >
                     {(unit.value).toString().padStart(2, '0')}
                   </motion.span>

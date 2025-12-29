@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { CheckCircle2, Feather, ImageIcon, Video, Music, Type, Upload, Calendar, Link as LinkIcon, Info, Loader2 } from 'lucide-react';
+import { CheckCircle2, Feather, ImageIcon, Video, Music, Type, Upload, Calendar, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { MemoryEntry, MemoryType } from '@shared/types';
 import { cn } from '@/lib/utils';
@@ -41,30 +41,33 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     objectUrlsRef.current = [];
   }, []);
   const extractDominantColor = (img: HTMLImageElement | HTMLCanvasElement): string => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1; canvas.height = 1;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return '#FDFBF7';
-    ctx.drawImage(img, 0, 0, 1, 1);
     try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1; canvas.height = 1;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return '#FDFBF7';
+      ctx.drawImage(img, 0, 0, 1, 1);
       const data = ctx.getImageData(0, 0, 1, 1).data;
       const toHex = (c: number) => c.toString(16).padStart(2, '0');
-      return `#${toHex(data[0])}${toHex(data[1])}${toHex(data[2])}`;
+      const hex = `#${toHex(data[0])}${toHex(data[1])}${toHex(data[2])}`;
+      return hex.startsWith('#') && hex.length === 7 ? hex : '#FDFBF7';
     } catch { return '#FDFBF7'; }
   };
   const generateThumbnailFromSource = (source: HTMLImageElement | HTMLVideoElement): string => {
-    const canvas = document.createElement('canvas');
-    const sourceWidth = (source as any).naturalWidth || (source as any).videoWidth || source.width;
-    const sourceHeight = (source as any).naturalHeight || (source as any).videoHeight || source.height;
-    const targetWidth = Math.min(400, sourceWidth);
-    const scaleFactor = targetWidth / sourceWidth;
-    const targetHeight = Math.floor(sourceHeight * scaleFactor);
-    canvas.width = targetWidth; canvas.height = targetHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return '';
-    ctx.imageSmoothingEnabled = true;
-    ctx.drawImage(source, 0, 0, targetWidth, targetHeight);
-    return canvas.toDataURL('image/jpeg', 0.4);
+    try {
+      const canvas = document.createElement('canvas');
+      const sourceWidth = (source as any).naturalWidth || (source as any).videoWidth || source.width || 400;
+      const sourceHeight = (source as any).naturalHeight || (source as any).videoHeight || source.height || 225;
+      const targetWidth = Math.min(400, sourceWidth);
+      const scaleFactor = targetWidth / sourceWidth;
+      const targetHeight = Math.floor(sourceHeight * scaleFactor);
+      canvas.width = targetWidth; canvas.height = targetHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return '';
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(source, 0, 0, targetWidth, targetHeight);
+      return canvas.toDataURL('image/jpeg', 0.4);
+    } catch { return ''; }
   };
   const generateSignature = (file: File): Promise<{ blobUrl: string; base64Thumb: string; color: string; autoType: MemoryType }> => {
     return new Promise((resolve) => {
@@ -118,6 +121,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    cleanupObjectUrls();
     setSelectedFile(file); setCurrentFileName(file.name);
     setIsProcessing(true); setSignatureCaptured(false);
     try {
@@ -129,7 +133,7 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) return;
+    if (!content.trim() || isSubmitting) return;
     setIsSubmitting(true);
     let finalMediaUrl = mediaUrl;
     try {
@@ -155,7 +159,6 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
         headers: { 'Content-Type': 'application/json' }
       });
       if (res.ok) {
-        localStorage.setItem('recent_memory_id', newId);
         toast.success("Archive updated.");
         onOpenChange(false);
         onSuccess();
@@ -183,7 +186,14 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
               </div>
             </div>
           )}
-          <Button type="submit" className="w-full py-8 rounded-2xl bg-peach hover:bg-peach-dark text-white font-serif text-xl shadow-xl" disabled={isSubmitting || isProcessing || !content.trim()}>{isSubmitting ? "Preserving..." : "Seal in Archive"}</Button>
+          <Button type="submit" className="w-full py-8 rounded-2xl bg-peach hover:bg-peach-dark text-white font-serif text-xl shadow-xl flex items-center justify-center gap-2" disabled={isSubmitting || isProcessing || !content.trim()}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-6 h-6 animate-spin" />
+                <span>Preserving...</span>
+              </>
+            ) : "Seal in Archive"}
+          </Button>
         </form>
       </DialogContent>
     </Dialog>

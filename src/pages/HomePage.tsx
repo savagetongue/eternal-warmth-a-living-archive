@@ -28,7 +28,11 @@ export function HomePage() {
     try {
       localStorage.setItem(CACHE_KEY, JSON.stringify(data));
     } catch (err) {
-      console.error("Cache sync failed", err);
+      if (err instanceof DOMException && err.name === 'QuotaExceededError') {
+        console.warn("Local storage full, caching skipped.");
+      } else {
+        console.error("Cache sync failed", err);
+      }
     }
   };
   const fetchMemories = useCallback(async (silent = false) => {
@@ -160,7 +164,7 @@ export function HomePage() {
                       key={memory.id}
                       initial={{ opacity: 0, y: 100 }}
                       whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, margin: "-100px" }}
+                      viewport={{ once: true, margin: "-120px" }}
                       transition={{ duration: 1.2, delay: (index % 3) * 0.1, ease: [0.16, 1, 0.3, 1] }}
                       className={cn("w-full flex", index % 2 === 0 ? "justify-start md:pl-12" : "justify-end md:pr-12")}
                     >
@@ -185,7 +189,7 @@ export function HomePage() {
                     <div className="space-y-4 relative z-10 px-8">
                       <p className="font-serif text-3xl md:text-5xl italic text-muted-foreground/60">Our first page is waiting...</p>
                     </div>
-                    <Button variant="default" className="rounded-full px-12 py-8 bg-peach text-white hover:bg-peach-dark transition-all duration-700 font-serif text-xl shadow-lg group relative overflow-hidden" onClick={handleNew}>
+                    <Button variant="default" className="rounded-full px-12 py-8 bg-peach text-white hover:bg-peach-dark transition-all duration-700 font-serif text-xl shadow-lg group relative overflow-hidden animate-pulse" onClick={handleNew}>
                       <span className="relative z-10">Write the Genesis</span>
                     </Button>
                   </motion.div>
@@ -195,16 +199,16 @@ export function HomePage() {
           </div>
         </div>
         <footer className="py-32 text-center space-y-12">
-          <div className="flex justify-center gap-8 opacity-20">
+          <div className="flex justify-center items-center gap-6 sm:gap-8 opacity-20">
              <Heart className="w-4 h-4 fill-peach animate-pulse" />
              <Heart className="w-4 h-4 fill-peach animate-pulse" style={{ animationDelay: '0.5s' }} />
              <Heart className="w-4 h-4 fill-peach animate-pulse" style={{ animationDelay: '1s' }} />
           </div>
-          <div className="space-y-4">
+          <div className="space-y-4 px-6">
             <p className="text-xl md:text-2xl text-muted-foreground/30 font-serif italic select-none">Each moment a thread, each thread a forever.</p>
             <div className="flex flex-col items-center gap-6">
               <p className="text-[10px] lg:text-[11px] uppercase tracking-[0.6em] text-peach/40 font-bold select-none">Eternal Warmth: A Living Archive</p>
-              <Button variant="ghost" onClick={handleClearArchive} className="text-[9px] uppercase tracking-[0.3em] text-muted-foreground/15 hover:text-red-400/40 transition-all duration-500 font-black">
+              <Button variant="ghost" onClick={handleClearArchive} className="text-[9px] uppercase tracking-[0.3em] text-muted-foreground/15 hover:text-red-400/40 transition-all duration-500 font-black h-auto py-2">
                 <Trash2 className="w-3.5 h-3.5 mr-2" /> Reset Sanctuary
               </Button>
             </div>
