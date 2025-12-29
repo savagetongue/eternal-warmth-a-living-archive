@@ -4,7 +4,7 @@
  */
  {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "anand-sakshi-archive-vlkmqxyaxektr6ue-jnow",
+	"name": "s0209a",
 	"main": "worker/index.ts",
 	"compatibility_date": "2025-04-24",
 	"assets": {
