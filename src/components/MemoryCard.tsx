@@ -49,7 +49,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
       )}
     >
       <div className="absolute top-6 right-8 opacity-0 group-hover:opacity-100 transition-all duration-300 flex gap-2 z-30">
-        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
           <Button
             variant="ghost"
             size="icon"
@@ -60,7 +60,7 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
             <Pencil className="w-4 h-4" />
           </Button>
         </motion.div>
-        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
           <Button
             variant="ghost"
             size="icon"
@@ -87,10 +87,11 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
+                  transition={{ duration: 0.7 }}
                   className="absolute inset-0 z-20 flex items-center justify-center bg-inherit"
                 >
                   {memory.previewUrl && (
-                    <img src={memory.previewUrl} className="absolute inset-0 w-full h-full object-cover blur-md opacity-30" alt="" />
+                    <img src={memory.previewUrl} className="absolute inset-0 w-full h-full object-contain blur-md opacity-40" alt="" />
                   )}
                   <Loader2 className="w-8 h-8 text-peach animate-spin relative z-10" />
                 </motion.div>
@@ -121,10 +122,11 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
+                  transition={{ duration: 0.7 }}
                   className="absolute inset-0 z-20 flex items-center justify-center bg-inherit"
                 >
                   {memory.previewUrl && (
-                    <img src={memory.previewUrl} className="absolute inset-0 w-full h-full object-cover blur-md opacity-30" alt="" />
+                    <img src={memory.previewUrl} className="absolute inset-0 w-full h-full object-contain blur-md opacity-40" alt="" />
                   )}
                   <Loader2 className="w-8 h-8 text-peach animate-spin relative z-10" />
                 </motion.div>

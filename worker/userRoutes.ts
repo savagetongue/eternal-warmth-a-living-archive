@@ -37,15 +37,21 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
         object.writeHttpMetadata(headers as any);
         headers.set('etag', object.httpEtag);
         headers.set('Cache-Control', 'public, max-age=31536000, immutable');
-        headers.set('Content-Length', object.size.toString());
         headers.set('Access-Control-Allow-Origin', '*');
+        headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
         headers.set('Access-Control-Expose-Headers', 'ETag, Content-Length, Content-Range, Accept-Ranges');
         const rangeStr = c.req.header('Range');
         if (rangeStr?.startsWith('bytes=')) {
             const parts = rangeStr.slice(6).split('-');
-            const start = parseInt(parts[0], 10);
-            const end = parts[1] ? parseInt(parts[1], 10) : object.size - 1;
-            if (start < object.size) {
+            let start = parseInt(parts[0], 10);
+            let end = parts[1] ? parseInt(parts[1], 10) : object.size - 1;
+            // Handle suffix-byte-range-spec (e.g. bytes=-500)
+            if (isNaN(start) && !isNaN(end)) {
+                start = object.size - end;
+                end = object.size - 1;
+            }
+            if (!isNaN(start) && start < object.size) {
+                end = Math.min(end, object.size - 1);
                 const chunkSize = end - start + 1;
                 headers.set('Content-Range', `bytes ${start}-${end}/${object.size}`);
                 headers.set('Content-Length', chunkSize.toString());
@@ -62,6 +68,7 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
             }
         }
         headers.set('Accept-Ranges', 'bytes');
+        headers.set('Content-Length', object.size.toString());
         const ext = filename.split('.').pop()?.toLowerCase();
         const mimeMap: Record<string, string> = {
             'mp4': 'video/mp4',
@@ -86,13 +93,11 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
             if (!file) {
                 return c.json({ success: false, error: 'No file provided' }, 400);
             }
-            const extension = file.name.split('.').pop()?.toLowerCase() || 'bin';
-            const isVideo = file.type.startsWith('video/');
-            const isAudio = file.type.startsWith('audio/');
             const uuid = crypto.randomUUID();
-            // Hardened naming pattern for uniqueness and storage precision
             const safeName = file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
             const filename = `${uuid}-${safeName}`;
+            const isVideo = file.type.startsWith('video/');
+            const isAudio = file.type.startsWith('audio/');
             const type = isVideo ? 'video' : isAudio ? 'audio' : 'image';
             const key = `${type}/${filename}`;
             let uploadUrl = '';
@@ -102,7 +107,6 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
                 });
                 uploadUrl = `/api/media/${type}/${filename}`;
             } else {
-                // Fallbacks if R2 is missing during local dev
                 if (isVideo) uploadUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
                 else if (isAudio) uploadUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
                 else uploadUrl = 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&q=80&w=800';

@@ -100,14 +100,18 @@ export function HomePage() {
   const { scrollYProgress } = useScroll();
   const y1 = useTransform(scrollYProgress, [0, 1], [0, -400]);
   const y2 = useTransform(scrollYProgress, [0, 1], [0, -800]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0]);
-  // Temporal Anchor logic: Sticky TimeKeeper becomes slightly more transparent but stays visible
-  const timeKeeperOpacity = useTransform(scrollYProgress, [0, 0.2, 0.4], [1, 0.8, 0.9]);
-  const timeKeeperScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.9]);
+  // Hero fades out quickly
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.12], [1, 0]);
+  // TimeKeeper transitions to a more compact, transparent sticky bar
+  const timeKeeperOpacity = useTransform(scrollYProgress, [0, 0.15, 0.3], [1, 0.85, 0.95]);
+  const timeKeeperScale = useTransform(scrollYProgress, [0, 0.15], [1, 0.92]);
+  const stickyBg = useTransform(scrollYProgress, [0, 0.15], ["rgba(255, 255, 255, 0)", "rgba(255, 255, 255, 0.4)"]);
+  const stickyBorder = useTransform(scrollYProgress, [0, 0.15], ["rgba(255, 154, 158, 0)", "rgba(255, 154, 158, 0.1)"]);
   return (
     <div className="min-h-screen bg-transparent relative selection:bg-peach/30 overflow-x-hidden transition-colors duration-1000">
       <ThemeToggle className="fixed top-6 right-6 lg:top-8 lg:right-10 z-50 shadow-sm" />
       <Toaster richColors position="bottom-right" closeButton />
+      {/* Background Decor */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <motion.div style={{ y: y1 }} className="absolute top-[-10%] left-[-5%] w-[80vw] h-[80vw] bg-peach/10 rounded-full blur-[140px] animate-breathe" />
         <motion.div style={{ y: y2 }} className="absolute top-[20%] right-[-10%] w-[90vw] h-[90vw] bg-mist/10 rounded-full blur-[160px] animate-breathe" transition={{ delay: 2 }} />
@@ -121,9 +125,9 @@ export function HomePage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
-            className="text-center space-y-16 pt-20 md:pt-32 mb-12 w-full"
+            className="text-center space-y-12 pt-20 md:pt-32 mb-8 w-full"
           >
-            <div className="space-y-8">
+            <div className="space-y-6">
               <h1 className="text-[12vw] md:text-[8rem] lg:text-[10rem] font-display font-black text-foreground tracking-[-0.05em] leading-none select-none">
                 02<span className="text-peach">.</span>09<span className="text-peach">.</span>2023
               </h1>
@@ -137,27 +141,32 @@ export function HomePage() {
               "A digital sanctuary where our story breathes and grows—a living archive of whispered promises."
             </p>
           </motion.div>
-          {/* Majestic Temporal Anchor (Sticky) */}
-          <motion.div 
-            style={{ opacity: timeKeeperOpacity, scale: timeKeeperScale }}
-            className="sticky top-0 z-20 w-full py-8 pointer-events-none"
+          {/* Majestic Temporal Anchor (Sticky Header) */}
+          <motion.div
+            style={{ 
+              opacity: timeKeeperOpacity, 
+              scale: timeKeeperScale,
+              backgroundColor: stickyBg,
+              borderColor: stickyBorder,
+            }}
+            className="sticky top-0 z-40 w-full py-2 pointer-events-none backdrop-blur-md border-b transition-colors duration-500 rounded-b-[2rem]"
           >
-            <div className="pointer-events-auto backdrop-blur-[2px] rounded-full">
+            <div className="pointer-events-auto">
               <TimeKeeper />
             </div>
           </motion.div>
           {/* Scroll Prompt */}
-          <motion.div 
+          <motion.div
             style={{ opacity: heroOpacity }}
-            animate={{ y: [0, 10, 0] }} 
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} 
-            className="mt-12 mb-48 text-peach/40 flex flex-col items-center gap-2"
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            className="mt-8 mb-32 text-peach/40 flex flex-col items-center gap-2"
           >
-            <span className="text-[10px] uppercase tracking-[0.6em] font-bold select-none">Scroll into our archive</span>
-            <ChevronDown className="w-5 h-5" />
+            <span className="text-[9px] uppercase tracking-[0.6em] font-bold select-none">Scroll into our archive</span>
+            <ChevronDown className="w-4 h-4" />
           </motion.div>
           {/* The Journal Feed */}
-          <div className="w-full space-y-32 max-w-5xl relative z-10 pb-32">
+          <div className="w-full space-y-24 max-w-5xl relative z-10 pb-32 pt-12">
             <div className="flex flex-col md:flex-row items-center justify-between border-b border-peach/10 pb-12 gap-8">
               <div className="space-y-2 text-center md:text-left">
                 <h2 className="text-3xl md:text-5xl font-serif font-bold text-foreground flex items-center justify-center md:justify-start gap-4">
@@ -170,7 +179,7 @@ export function HomePage() {
                 {memories.length} Threads Woven
               </div>
             </div>
-            <div className="flex flex-col space-y-40 md:space-y-64 items-center">
+            <div className="flex flex-col space-y-32 md:space-y-48 items-center">
               <AnimatePresence mode="popLayout">
                 {isLoading && memories.length === 0 ? (
                   <motion.div key="loader" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="w-full flex flex-col items-center justify-center py-64 space-y-8">
@@ -185,7 +194,7 @@ export function HomePage() {
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true, margin: "-120px" }}
                       transition={{ duration: 1.2, delay: (index % 3) * 0.1, ease: [0.16, 1, 0.3, 1] }}
-                      className={cn("w-full flex", index % 2 === 0 ? "justify-start md:pl-12" : "justify-end md:pr-12")}
+                      className={cn("w-full flex", index % 2 === 0 ? "justify-start md:pl-8" : "justify-end md:pr-8")}
                     >
                       <div className="w-full max-w-3xl">
                         <MemoryCard
