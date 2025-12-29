@@ -99,8 +99,9 @@ export const MemoryCard = forwardRef<HTMLDivElement, MemoryCardProps>(({ memory,
             </AnimatePresence>
             <video
               src={memory.mediaUrl}
-              poster={memory.previewUrl}
+              poster={memory.previewUrl || undefined}
               controls
+              controlsList="nodownload"
               preload="metadata"
               playsInline
               className={cn("relative z-10 w-full h-full object-contain transition-opacity duration-700", isMediaLoading ? "opacity-0" : "opacity-100")}

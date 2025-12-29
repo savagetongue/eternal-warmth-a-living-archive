@@ -46,11 +46,14 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
             let start = parseInt(parts[0], 10);
             let end = parts[1] ? parseInt(parts[1], 10) : object.size - 1;
             // Handle suffix-byte-range-spec (e.g. bytes=-500)
-            if (isNaN(start) && !isNaN(end)) {
-                start = object.size - end;
-                end = object.size - 1;
+            if (parts[0] === '' && parts[1]) {
+                const length = parseInt(parts[1], 10);
+                if (!isNaN(length) && length > 0) {
+                    start = Math.max(0, object.size - length);
+                    end = object.size - 1;
+                }
             }
-            if (!isNaN(start) && start < object.size) {
+            if (!isNaN(start) && start >= 0 && start < object.size) {
                 end = Math.min(end, object.size - 1);
                 const chunkSize = end - start + 1;
                 headers.set('Content-Range', `bytes ${start}-${end}/${object.size}`);
@@ -67,8 +70,6 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
                 }
             }
         }
-        headers.set('Accept-Ranges', 'bytes');
-        headers.set('Content-Length', object.size.toString());
         const ext = filename.split('.').pop()?.toLowerCase();
         const mimeMap: Record<string, string> = {
             'mp4': 'video/mp4',
@@ -82,6 +83,8 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
         if (ext && mimeMap[ext]) {
             headers.set('Content-Type', mimeMap[ext]);
         }
+        headers.set('Accept-Ranges', 'bytes');
+        headers.set('Content-Length', object.size.toString());
         return new Response(object.body as any, {
             headers: headers as any
         });
@@ -115,7 +118,7 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
                 });
                 uploadUrl = `/api/media/${type}/${filename}`;
             } else {
-                if (type === 'video') uploadUrl = 'https://media.w3c.org/2010/05/sintel/trailer_hd.mp4';
+                if (type === 'video') uploadUrl = 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
                 else if (type === 'audio') uploadUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
                 else uploadUrl = 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&q=80&w=800';
             }
