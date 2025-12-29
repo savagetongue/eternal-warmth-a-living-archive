@@ -96,9 +96,17 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
             const uuid = crypto.randomUUID();
             const safeName = file.name.replace(/\s/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
             const filename = `${uuid}-${safeName}`;
-            const isVideo = file.type.startsWith('video/');
-            const isAudio = file.type.startsWith('audio/');
-            const type = isVideo ? 'video' : isAudio ? 'audio' : 'image';
+            const getMediaType = (file: File): 'video' | 'audio' | 'image' => {
+                const ext = file.name.split('.').pop()?.toLowerCase();
+                const videoExts = ['mp4','webm','mov','avi','mkv','3gp','flv','wmv','ogv'];
+                const audioExts = ['mp3','wav','aac','m4a','ogg','flac','wma'];
+                const imageExts = ['jpg','jpeg','png','gif','webp','bmp','tiff','svg','heic'];
+                
+                if (file.type.startsWith('video/') || (ext && videoExts.includes(ext))) return 'video';
+                if (file.type.startsWith('audio/') || (ext && audioExts.includes(ext))) return 'audio';
+                return 'image';
+            };
+            const type = getMediaType(file);
             const key = `${type}/${filename}`;
             let uploadUrl = '';
             if (c.env.MEMORIES_BUCKET) {
@@ -107,8 +115,8 @@ export function userRoutes(app: Hono<{ Bindings: ExtendedEnv }>) {
                 });
                 uploadUrl = `/api/media/${type}/${filename}`;
             } else {
-                if (isVideo) uploadUrl = 'https://media.w3c.org/2010/05/sintel/trailer_hd.mp4';
-                else if (isAudio) uploadUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+                if (type === 'video') uploadUrl = 'https://media.w3c.org/2010/05/sintel/trailer_hd.mp4';
+                else if (type === 'audio') uploadUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
                 else uploadUrl = 'https://images.unsplash.com/photo-1518133910546-b6c2fb7d79e3?auto=format&fit=crop&q=80&w=800';
             }
             return c.json({ success: true, data: { url: uploadUrl } });

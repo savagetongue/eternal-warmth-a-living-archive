@@ -39,6 +39,20 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     objectUrlsRef.current.forEach((url) => { if (url.startsWith('blob:')) URL.revokeObjectURL(url); });
     objectUrlsRef.current = [];
   }, []);
+
+  const getMediaType = (file: File): MemoryType => {
+    const type = file.type.toLowerCase();
+    const ext = file.name.toLowerCase().split('.').pop() || '';
+    
+    const videoExts = ['mp4','webm','mov','avi','mkv','3gp','flv','wmv','ogv'];
+    const audioExts = ['mp3','wav','aac','m4a','ogg','flac','wma'];
+    const imageExts = ['jpg','jpeg','png','gif','webp','bmp','tiff','svg','heic'];
+    
+    if (type.startsWith('video/') || videoExts.includes(ext)) return 'video';
+    if (type.startsWith('audio/') || audioExts.includes(ext)) return 'audio';
+    if (type.startsWith('image/') || imageExts.includes(ext)) return 'image';
+    return 'image';
+  };
   const extractDominantColor = (img: HTMLImageElement | HTMLCanvasElement): string => {
     try {
       const canvas = document.createElement('canvas');
@@ -54,12 +68,12 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
   const generateThumbnailFromSource = (source: HTMLImageElement | HTMLVideoElement): string => {
     try {
       const canvas = document.createElement('canvas');
-      const sourceWidth = (source as any).naturalWidth || (source as any).videoWidth || source.width || 400;
-      const sourceHeight = (source as any).naturalHeight || (source as any).videoHeight || source.height || 225;
+      const sourceWidth = 'videoWidth' in source ? source.videoWidth : source.naturalWidth || source.width || 400;
+      const sourceHeight = 'videoHeight' in source ? source.videoHeight : source.naturalHeight || source.height || 225;
       const targetWidth = Math.min(800, sourceWidth);
       const scaleFactor = targetWidth / sourceWidth;
       const targetHeight = Math.floor(sourceHeight * scaleFactor);
-      canvas.width = targetWidth; 
+      canvas.width = targetWidth;
       canvas.height = targetHeight;
       const ctx = canvas.getContext('2d');
       if (!ctx) return '';
@@ -70,48 +84,43 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
       return canvas.toDataURL('image/jpeg', 0.95);
     } catch { return ''; }
   };
-  const generateSignature = (file: File): Promise<{ blobUrl: string; base64Thumb: string; color: string; autoType: MemoryType }> => {
+  const generateSignature = (file: File, predictedType: MemoryType): Promise<{ base64Thumb: string; color: string; }> => {
     return new Promise((resolve) => {
       const objectUrl = URL.createObjectURL(file);
       objectUrlsRef.current.push(objectUrl);
-      const isVideo = file.type.startsWith('video/');
-      const isAudio = file.type.startsWith('audio/');
-      const autoType: MemoryType = isVideo ? 'video' : isAudio ? 'audio' : 'image';
-      const fallbackColor = isVideo ? '#A1C4FD' : '#FF9A9E';
-      if (file.type.startsWith('image/')) {
+      const fallbackColor = predictedType === 'video' ? '#A1C4FD' : predictedType === 'audio' ? '#FF9A9E' : '#FDFBF7';
+      if (predictedType === 'image') {
         const img = new Image();
-        const timeout = setTimeout(() => resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor, autoType }), 5000);
+        const timeout = setTimeout(() => resolve({ base64Thumb: '', color: fallbackColor }), 5000);
         img.onload = () => {
           clearTimeout(timeout);
-          resolve({ blobUrl: objectUrl, base64Thumb: generateThumbnailFromSource(img), color: extractDominantColor(img), autoType });
+          resolve({ base64Thumb: generateThumbnailFromSource(img), color: extractDominantColor(img) });
         };
-        img.onerror = () => { clearTimeout(timeout); resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor, autoType }); };
+        img.onerror = () => { clearTimeout(timeout); resolve({ base64Thumb: '', color: fallbackColor }); };
         img.src = objectUrl;
-      } else if (isVideo) {
+      } else if (predictedType === 'video') {
         const video = document.createElement('video');
         video.preload = 'metadata'; video.muted = true;
-        const timeout = setTimeout(() => resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor, autoType }), 10000);
+        const timeout = setTimeout(() => resolve({ base64Thumb: '', color: fallbackColor }), 10000);
         video.onloadedmetadata = () => {
           // Seek to 0.5s to get a meaningful frame
           video.currentTime = 0.5;
         };
         video.onseeked = () => {
           clearTimeout(timeout);
-          resolve({ 
-            blobUrl: objectUrl, 
-            base64Thumb: generateThumbnailFromSource(video), 
-            color: extractDominantColor(video as any), 
-            autoType 
+          resolve({
+            base64Thumb: generateThumbnailFromSource(video),
+            color: extractDominantColor(video as any)
           });
           video.remove();
         };
         video.onerror = () => {
           clearTimeout(timeout);
-          resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor, autoType });
+          resolve({ base64Thumb: '', color: fallbackColor });
         };
         video.src = objectUrl;
       } else {
-        resolve({ blobUrl: objectUrl, base64Thumb: '', color: fallbackColor, autoType });
+        resolve({ base64Thumb: '', color: fallbackColor });
       }
     });
   };
@@ -137,10 +146,11 @@ export function ComposeModal({ initialData, isOpen, onOpenChange, onSuccess }: C
     setSelectedFile(file); setCurrentFileName(file.name);
     setIsProcessing(true); setSignatureCaptured(false);
     try {
-      const { base64Thumb, color, autoType } = await generateSignature(file);
-      setPreviewUrl(base64Thumb); setDominantColor(color);
-      setType(autoType); setSignatureCaptured(true);
-      toast.success(`${autoType.charAt(0).toUpperCase() + autoType.slice(1)} signature captured.`);
+      const predictedType = getMediaType(file);
+      const { base64Thumb: previewDataUrl, color: dominantColorFromSig } = await generateSignature(file, predictedType);
+      setPreviewUrl(previewDataUrl); setDominantColor(dominantColorFromSig);
+      setType(predictedType); setSignatureCaptured(true);
+      toast.success(`${predictedType.charAt(0).toUpperCase() + predictedType.slice(1)} signature captured.`);
     } catch { toast.error("Processing failed."); } finally { setIsProcessing(false); }
   };
   const handleSubmit = async (e: React.FormEvent) => {
